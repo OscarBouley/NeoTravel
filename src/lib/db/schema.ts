@@ -7,6 +7,7 @@ import {
   date,
   time,
   integer,
+  numeric,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
@@ -56,4 +57,27 @@ export const leads = pgTable("leads", {
 
   voyageursMin: integer("voyageurs_min"),
   voyageursMax: integer("voyageurs_max"),
+});
+
+export const devis = pgTable("devis", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+
+  leadId: uuid("lead_id")
+    .notNull()
+    .references(() => leads.id),
+
+  reference: varchar("reference", { length: 50 }).notNull(),
+  distanceKm: integer("distance_km").notNull(),
+  prixHT: numeric("prix_ht", { precision: 10, scale: 2 }).notNull(),
+  prixTTC: numeric("prix_ttc", { precision: 10, scale: 2 }).notNull(),
+
+  coeffSaison: numeric("coeff_saison", { precision: 5, scale: 4 }),
+  coeffDate: numeric("coeff_date", { precision: 5, scale: 4 }),
+  coeffCapacite: numeric("coeff_capacite", { precision: 5, scale: 4 }),
+  marge: numeric("marge", { precision: 5, scale: 4 }),
+
+  envoyeLe: timestamp("envoye_le", { withTimezone: true }),
 });
