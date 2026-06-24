@@ -1,0 +1,136 @@
+{
+  "id": "abece7bf-91db-452c-8ecf-129981a41860",
+  "prevId": "5e6547ee-1c62-4143-a9f8-f0c934a43d73",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.leads": {
+      "name": "leads",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Nouvelle demande'"
+        },
+        "nom": {
+          "name": "nom",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prenom": {
+          "name": "prenom",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "telephone": {
+          "name": "telephone",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "societe": {
+          "name": "societe",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "depart_ville": {
+          "name": "depart_ville",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "depart_heure": {
+          "name": "depart_heure",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "arrivee_ville": {
+          "name": "arrivee_ville",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "arrivee_heure": {
+          "name": "arrivee_heure",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "besoin": {
+          "name": "besoin",
+          "type": "besoin",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "voyageurs_min": {
+          "name": "voyageurs_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "voyageurs_max": {
+          "name": "voyageurs_max",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.besoin": {
+      "name": "besoin",
+      "schema": "public",
+      "values": [
+        "aller_simple",
+        "aller_retour",
+        "circuit"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
