@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import DevisForm from "@/components/devis-form";
-import ChatPlaceholder from "@/components/chat-placeholder";
+import ChatDevis from "@/components/chat-devis";
 
 type Mode = "chat" | "formulaire";
 
@@ -90,7 +90,7 @@ export default function Home() {
 
           {/* Content card */}
           <div className="w-full max-w-xl rounded-2xl border border-navy-700/50 bg-navy-900 p-5 shadow-2xl shadow-navy-950/50 sm:p-7">
-            {mode === "chat" ? <ChatPlaceholder /> : <DevisForm />}
+            {mode === "chat" ? <ChatDevis /> : <DevisForm />}
           </div>
 
           {/* Toggle button */}
