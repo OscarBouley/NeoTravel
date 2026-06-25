@@ -6,14 +6,6 @@ import ChatDevis from "@/components/chat-devis";
 
 type Mode = "chat" | "formulaire";
 
-const NAV_LINKS = [
-  "Accueil",
-  "Nos services",
-  "Flotte",
-  "Avis clients",
-  "Contact",
-];
-
 export default function Home() {
   const [mode, setMode] = useState<Mode>("chat");
 
@@ -26,14 +18,8 @@ export default function Home() {
             Neo<span className="text-lime-400">Travel</span>
           </span>
           <nav className="hidden items-center gap-6 text-sm font-medium text-navy-400 md:flex">
-            {NAV_LINKS.map((link, i) => (
-              <button
-                key={link}
-                className={`transition-colors hover:text-navy-100 ${i === 0 ? "text-navy-100" : ""}`}
-              >
-                {link}
-              </button>
-            ))}
+            <a href="/" className="text-navy-100">Accueil</a>
+            <a href="/dashboard" className="transition-colors hover:text-navy-100">Dashboard</a>
           </nav>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-navy-400 lg:block">

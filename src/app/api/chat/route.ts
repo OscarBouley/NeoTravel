@@ -7,7 +7,6 @@ import { leads, prospects, devis } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { calculerDistanceKm } from "@/lib/geo/distance";
 import { calculerDevis } from "@/lib/business/calculer-devis";
-import { envoyerDevis } from "@/lib/email/envoyer-devis";
 
 const SYSTEM_PROMPT = `Tu es l'assistant commercial de NeoTravel, spécialiste du transport de groupe (bus, autocar, minibus avec chauffeur).
 
@@ -53,7 +52,7 @@ RÈGLES MÉTIER :
 - Pendant la collecte, tu ne donnes JAMAIS de prix, estimation, tarif ou fourchette de prix
 - Si on te demande un prix avant la création du devis, réponds que le prix sera calculé automatiquement une fois toutes les infos réunies
 - Tu ne négocies rien, tu collectes les informations
-- Après la création du devis, communique au prospect le tarif TTC renvoyé par l'outil et précise que le devis complet au format PDF a été envoyé en parallèle par email
+- Après la création du devis, communique au prospect le tarif TTC renvoyé par l'outil et précise qu'un conseiller va relire le devis et le lui enverra par email très prochainement
 - Utilise le champ "message" renvoyé par l'outil pour construire ta confirmation`;
 
 const devisSchema = z.object({
@@ -188,52 +187,9 @@ async function executeCreerDevis(params: DevisInput) {
     };
   }
 
-  // 5. Générer et envoyer le devis
+  // 5. Sauvegarder le devis en base (sans envoyer l'email — le commercial validera depuis le dashboard)
   const reference = `NT-${Date.now().toString(36).toUpperCase()}`;
-  console.log(`\n📧 Step 5 — Génération PDF + envoi email (réf: ${reference})...`);
-
-  try {
-    await envoyerDevis({
-      reference,
-      date: new Date().toISOString().slice(0, 10),
-      prospect: {
-        nom: prospect.nom ?? "",
-        prenom: prospect.prenom ?? "",
-        email: prospect.email,
-        telephone: prospect.telephone ?? "",
-        societe: prospect.societe ?? "",
-      },
-      voyage: {
-        besoin: params.besoin,
-        departVille: params.depart_ville,
-        departDate: params.depart_date,
-        departHeure: params.depart_heure,
-        arriveeVille: params.arrivee_ville,
-        arriveeDate: params.arrivee_date,
-        arriveeHeure: params.arrivee_heure,
-        nbPassagers,
-      },
-      prix: {
-        prixHT: result.prixHT,
-        prixTTC: result.prixTTC,
-      },
-    });
-    console.log(`  ✅ Email envoyé à ${prospect.email}`);
-  } catch (err) {
-    console.error("  ❌ Erreur envoi email:", err);
-    await db
-      .update(leads)
-      .set({ status: "Erreur envoi email" })
-      .where(eq(leads.id, lead.id));
-    return {
-      success: true,
-      leadId: lead.id,
-      message: `Demande enregistrée et devis calculé (réf: ${lead.id.slice(0, 8)}). L'envoi de l'email a échoué, un conseiller vous recontactera sous 2h.`,
-    };
-  }
-
-  // 6. Sauvegarder le devis en base
-  console.log("\n💾 Step 6 — Sauvegarde du devis en base...");
+  console.log(`\n💾 Step 5 — Sauvegarde du devis en base (réf: ${reference})...`);
   const [devisRecord] = await db
     .insert(devis)
     .values({
@@ -246,15 +202,14 @@ async function executeCreerDevis(params: DevisInput) {
       coeffDate: result.detail.coeffDate.toString(),
       coeffCapacite: result.detail.coeffCapacite.toString(),
       marge: result.detail.marge.toString(),
-      envoyeLe: new Date(),
     })
     .returning({ id: devis.id });
   console.log(`  ✅ Devis sauvegardé (${devisRecord.id.slice(0, 8)})`);
 
-  // 7. Mettre à jour le statut du lead
+  // 6. Mettre à jour le statut du lead
   await db
     .update(leads)
-    .set({ status: "Devis envoyé" })
+    .set({ status: "Devis généré" })
     .where(eq(leads.id, lead.id));
 
   console.log("\n🎉 === DEVIS TERMINÉ ===\n");
@@ -264,7 +219,7 @@ async function executeCreerDevis(params: DevisInput) {
     leadId: lead.id,
     devisId: devisRecord.id,
     reference,
-    message: `Devis créé avec succès. Tarif : ${Math.round(result.prixTTC)} € TTC (réf: ${reference}). Le devis complet au format PDF a été envoyé par email à ${prospect.email}.`,
+    message: `Devis généré avec succès (réf: ${reference}), tarif : ${Math.round(result.prixTTC)} € TTC. Un conseiller va relire votre devis et vous l'enverra par email très prochainement.`,
   };
 }
 

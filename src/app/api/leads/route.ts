@@ -1,7 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { leads, prospects } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { leads, prospects, devis } from "@/lib/db/schema";
+import { eq, desc } from "drizzle-orm";
+
+export async function GET() {
+  try {
+    const rows = await db
+      .select({
+        lead: leads,
+        prospect: prospects,
+        devis: devis,
+      })
+      .from(leads)
+      .innerJoin(prospects, eq(leads.prospectId, prospects.id))
+      .leftJoin(devis, eq(devis.leadId, leads.id))
+      .orderBy(desc(leads.createdAt));
+
+    return NextResponse.json(rows);
+  } catch (error: unknown) {
+    console.error("Erreur liste leads:", error);
+    const message =
+      error instanceof Error ? error.message : "Erreur interne";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
