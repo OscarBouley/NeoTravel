@@ -75,7 +75,24 @@ export async function POST(
 
     const reference = `NT-${Date.now().toString(36).toUpperCase()}`;
 
+    const [devisRecord] = await db
+      .insert(devis)
+      .values({
+        leadId: id,
+        reference,
+        distanceKm,
+        prixHT: result.prixHT.toString(),
+        prixTTC: result.prixTTC.toString(),
+        coeffSaison: result.detail.coeffSaison.toString(),
+        coeffDate: result.detail.coeffDate.toString(),
+        coeffCapacite: result.detail.coeffCapacite.toString(),
+        marge: result.detail.marge.toString(),
+        envoyeLe: new Date(),
+      })
+      .returning({ id: devis.id, reference: devis.reference });
+
     await envoyerDevis({
+      devisId: devisRecord.id,
       reference,
       date: new Date().toISOString().slice(0, 10),
       prospect: {
@@ -100,22 +117,6 @@ export async function POST(
         prixTTC: result.prixTTC,
       },
     });
-
-    const [devisRecord] = await db
-      .insert(devis)
-      .values({
-        leadId: id,
-        reference,
-        distanceKm,
-        prixHT: result.prixHT.toString(),
-        prixTTC: result.prixTTC.toString(),
-        coeffSaison: result.detail.coeffSaison.toString(),
-        coeffDate: result.detail.coeffDate.toString(),
-        coeffCapacite: result.detail.coeffCapacite.toString(),
-        marge: result.detail.marge.toString(),
-        envoyeLe: new Date(),
-      })
-      .returning({ id: devis.id, reference: devis.reference });
 
     await db
       .update(leads)

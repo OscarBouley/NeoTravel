@@ -51,7 +51,9 @@ const BESOIN_LABELS: Record<string, string> = {
 const STATUS_COLORS: Record<string, string> = {
   "Nouvelle demande": "bg-navy-400/20 text-navy-400",
   "Devis généré": "bg-yellow-400/20 text-yellow-400",
-  "Devis envoyé": "bg-lime-400/20 text-lime-400",
+  "Devis envoyé": "bg-blue-400/20 text-blue-400",
+  "Devis accepté": "bg-lime-400/20 text-lime-400",
+  "Devis refusé": "bg-red-400/20 text-red-400",
   "Renvoyé au commercial": "bg-orange-400/20 text-orange-400",
   "Erreur distance": "bg-red-400/20 text-red-400",
 };
@@ -169,7 +171,7 @@ export default function LeadsTable({ rows }: { rows: Row[] }) {
                         Voir
                       </button>
                     )}
-                    {row.devis && row.lead.status !== "Devis envoyé" && (
+                    {row.devis && row.lead.status === "Devis généré" && (
                       <button
                         onClick={() => handleEnvoyer(row.devis!.id)}
                         disabled={sending === row.devis.id}
@@ -177,9 +179,6 @@ export default function LeadsTable({ rows }: { rows: Row[] }) {
                       >
                         {sending === row.devis.id ? "Envoi..." : "Envoyer"}
                       </button>
-                    )}
-                    {row.lead.status === "Devis envoyé" && (
-                      <span className="px-1 text-xs text-lime-400">✓ Envoyé</span>
                     )}
                   </div>
                 </td>

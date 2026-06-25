@@ -31,6 +31,7 @@ export async function POST(
       .where(eq(prospects.id, lead.prospectId));
 
     await envoyerDevis({
+      devisId: id,
       reference: d.reference,
       date: d.createdAt.toISOString().slice(0, 10),
       prospect: {
