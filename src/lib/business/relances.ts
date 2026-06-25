@@ -56,12 +56,21 @@ export async function getRelancesAEnvoyer(): Promise<RelanceAEnvoyer[]> {
     relancesParDevis.set(r.devisId, list);
   }
 
+  const latestDevisByLead = new Map<string, typeof rows[0]>();
+  for (const row of rows) {
+    if (!row.devis.envoyeLe) continue;
+    const existing = latestDevisByLead.get(row.lead.id);
+    if (!existing || row.devis.version > existing.devis.version) {
+      latestDevisByLead.set(row.lead.id, row);
+    }
+  }
+
   const result: RelanceAEnvoyer[] = [];
 
-  for (const row of rows) {
+  for (const row of latestDevisByLead.values()) {
     if (row.lead.status !== "Devis envoyé") continue;
-    if (!row.devis.envoyeLe) continue;
     if (!row.lead.departDate) continue;
+    if (!row.devis.envoyeLe) continue;
 
     const joursAvantDepart = joursAvant(row.lead.departDate);
     if (joursAvantDepart < 0) continue;
