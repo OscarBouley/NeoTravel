@@ -16,6 +16,14 @@ export interface DevisParams {
   nbPassagers: number;
 }
 
+export interface DevisOverrides {
+  coeffSaison?: number;
+  coeffDate?: number;
+  coeffCapacite?: number;
+  marge?: number;
+  ajustementCustom?: number;
+}
+
 export interface DevisResult {
   prixHT: number;
   prixTTC: number;
@@ -26,6 +34,7 @@ export interface DevisResult {
     coeffSaison: number;
     coeffDate: number;
     coeffCapacite: number;
+    ajustementCustom: number;
     renvoyerCommercial: boolean;
   };
 }
@@ -103,26 +112,36 @@ function getCoeffCapacite(nbPassagers: number): {
   return { coeff: 0, renvoyerCommercial: true };
 }
 
-export function calculerDevis(params: DevisParams): DevisResult {
+export function calculerDevis(
+  params: DevisParams,
+  overrides?: DevisOverrides,
+): DevisResult {
   const { distanceKm, besoin, dateDepart, nbPassagers } = params;
-  const dateDemande = params.dateDemande ?? new Date().toISOString().slice(0, 10);
+  const dateDemande =
+    params.dateDemande ?? new Date().toISOString().slice(0, 10);
 
   const prixBase = getPrixBase(distanceKm);
-
   const multiplicateur = besoin === "aller_retour" ? 2 : 1;
 
-  const coeffSaison = getCoeffSaison(dateDepart);
-  const coeffDate = getCoeffDate(dateDepart, dateDemande);
-  const { coeff: coeffCapacite, renvoyerCommercial } =
+  const coeffSaison = overrides?.coeffSaison ?? getCoeffSaison(dateDepart);
+  const coeffDate =
+    overrides?.coeffDate ?? getCoeffDate(dateDepart, dateDemande);
+
+  const { coeff: coeffCapaciteAuto, renvoyerCommercial } =
     getCoeffCapacite(nbPassagers);
+  const coeffCapacite = overrides?.coeffCapacite ?? coeffCapaciteAuto;
+
+  const marge = overrides?.marge ?? MARGE;
+  const ajustementCustom = overrides?.ajustementCustom ?? 0;
 
   const prixApresMultiplicateur = prixBase * multiplicateur;
-  const prixApresMarge = prixApresMultiplicateur * (1 + MARGE);
+  const prixApresMarge = prixApresMultiplicateur * (1 + marge);
   const prixHT =
     prixApresMarge *
     (1 + coeffSaison) *
     (1 + coeffDate) *
-    (1 + coeffCapacite);
+    (1 + coeffCapacite) *
+    (1 + ajustementCustom);
 
   const prixTTC = prixHT * (1 + TVA);
 
@@ -132,11 +151,13 @@ export function calculerDevis(params: DevisParams): DevisResult {
     detail: {
       prixBase,
       multiplicateur,
-      marge: MARGE,
+      marge,
       coeffSaison,
       coeffDate,
       coeffCapacite,
-      renvoyerCommercial,
+      ajustementCustom,
+      renvoyerCommercial:
+        overrides?.coeffCapacite !== undefined ? false : renvoyerCommercial,
     },
   };
 }
