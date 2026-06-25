@@ -32,6 +32,7 @@ export async function POST(
 
     await envoyerDevis({
       devisId: id,
+      isRevision: d.version > 1,
       reference: d.reference,
       date: d.createdAt.toISOString().slice(0, 10),
       prospect: {

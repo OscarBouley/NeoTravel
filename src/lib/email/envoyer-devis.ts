@@ -6,7 +6,7 @@ import { DevisPdf, type DevisPdfData } from "./devis-pdf";
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 export async function envoyerDevis(
-  data: DevisPdfData & { devisId: string },
+  data: DevisPdfData & { devisId: string; isRevision?: boolean },
 ) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pdfBuffer = await renderToBuffer(
@@ -16,16 +16,27 @@ export async function envoyerDevis(
   const accepterUrl = `${BASE_URL}/devis/${data.devisId}/accepter`;
   const declinerUrl = `${BASE_URL}/devis/${data.devisId}/decliner`;
 
+  const subject = data.isRevision
+    ? `Nouveau devis NeoTravel — ${data.reference}`
+    : `Votre devis NeoTravel — ${data.reference}`;
+
+  const intro = data.isRevision
+    ? `<p>Suite à nos échanges, votre conseiller vous a préparé un nouveau devis
+       <strong>n°${data.reference}</strong> pour votre trajet
+       ${data.voyage.departVille} → ${data.voyage.arriveeVille}.</p>`
+    : `<p>Suite à votre demande, veuillez trouver ci-joint votre devis
+       <strong>n°${data.reference}</strong> pour votre trajet
+       ${data.voyage.departVille} → ${data.voyage.arriveeVille}.</p>`;
+
   await transporter.sendMail({
     from: `"NeoTravel" <${process.env.GMAIL_USER}>`,
     to: data.prospect.email,
-    subject: `Votre devis NeoTravel — ${data.reference}`,
+    subject,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #1a1a1a;">Bonjour ${data.prospect.prenom},</h2>
 
-        <p>Suite à votre demande, veuillez trouver ci-joint votre devis <strong>n°${data.reference}</strong>
-        pour votre trajet ${data.voyage.departVille} → ${data.voyage.arriveeVille}.</p>
+        ${intro}
 
         <p style="font-size: 24px; font-weight: bold; color: #8DB600; text-align: center; margin: 24px 0;">
           ${Math.round(data.prix.prixTTC)} € TTC

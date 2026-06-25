@@ -57,6 +57,8 @@ export const leads = pgTable("leads", {
 
   voyageursMin: integer("voyageurs_min"),
   voyageursMax: integer("voyageurs_max"),
+
+  noteCommercial: varchar("note_commercial", { length: 500 }),
 });
 
 export const devis = pgTable("devis", {
@@ -74,10 +76,27 @@ export const devis = pgTable("devis", {
   prixHT: numeric("prix_ht", { precision: 10, scale: 2 }).notNull(),
   prixTTC: numeric("prix_ttc", { precision: 10, scale: 2 }).notNull(),
 
+  version: integer("version").notNull().default(1),
+
   coeffSaison: numeric("coeff_saison", { precision: 5, scale: 4 }),
   coeffDate: numeric("coeff_date", { precision: 5, scale: 4 }),
   coeffCapacite: numeric("coeff_capacite", { precision: 5, scale: 4 }),
   marge: numeric("marge", { precision: 5, scale: 4 }),
+  ajustementCustom: numeric("ajustement_custom", { precision: 5, scale: 4 }),
 
   envoyeLe: timestamp("envoye_le", { withTimezone: true }),
+});
+
+export const relances = pgTable("relances", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+
+  devisId: uuid("devis_id")
+    .notNull()
+    .references(() => devis.id),
+
+  type: varchar("type", { length: 20 }).notNull(),
+  envoyeLe: timestamp("envoye_le", { withTimezone: true }).notNull(),
 });

@@ -1,0 +1,390 @@
+{
+  "id": "0704904d-1bfe-4423-aeb7-fc377ca0016b",
+  "prevId": "ca967ee8-9e2e-4fa6-88fe-f806216065e4",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.devis": {
+      "name": "devis",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "lead_id": {
+          "name": "lead_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reference": {
+          "name": "reference",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "distance_km": {
+          "name": "distance_km",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prix_ht": {
+          "name": "prix_ht",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prix_ttc": {
+          "name": "prix_ttc",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "coeff_saison": {
+          "name": "coeff_saison",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coeff_date": {
+          "name": "coeff_date",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coeff_capacite": {
+          "name": "coeff_capacite",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "marge": {
+          "name": "marge",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ajustement_custom": {
+          "name": "ajustement_custom",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "envoye_le": {
+          "name": "envoye_le",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "devis_lead_id_leads_id_fk": {
+          "name": "devis_lead_id_leads_id_fk",
+          "tableFrom": "devis",
+          "tableTo": "leads",
+          "columnsFrom": [
+            "lead_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.leads": {
+      "name": "leads",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Nouvelle demande'"
+        },
+        "prospect_id": {
+          "name": "prospect_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "depart_ville": {
+          "name": "depart_ville",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "depart_date": {
+          "name": "depart_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "depart_heure": {
+          "name": "depart_heure",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "arrivee_ville": {
+          "name": "arrivee_ville",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "arrivee_date": {
+          "name": "arrivee_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "arrivee_heure": {
+          "name": "arrivee_heure",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "besoin": {
+          "name": "besoin",
+          "type": "besoin",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "voyageurs_min": {
+          "name": "voyageurs_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "voyageurs_max": {
+          "name": "voyageurs_max",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note_commercial": {
+          "name": "note_commercial",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "leads_prospect_id_prospects_id_fk": {
+          "name": "leads_prospect_id_prospects_id_fk",
+          "tableFrom": "leads",
+          "tableTo": "prospects",
+          "columnsFrom": [
+            "prospect_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.prospects": {
+      "name": "prospects",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nom": {
+          "name": "nom",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prenom": {
+          "name": "prenom",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "telephone": {
+          "name": "telephone",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "societe": {
+          "name": "societe",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "prospects_email_idx": {
+          "name": "prospects_email_idx",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.relances": {
+      "name": "relances",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "devis_id": {
+          "name": "devis_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "envoye_le": {
+          "name": "envoye_le",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "relances_devis_id_devis_id_fk": {
+          "name": "relances_devis_id_devis_id_fk",
+          "tableFrom": "relances",
+          "tableTo": "devis",
+          "columnsFrom": [
+            "devis_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.besoin": {
+      "name": "besoin",
+      "schema": "public",
+      "values": [
+        "aller_simple",
+        "aller_retour",
+        "circuit"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

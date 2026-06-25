@@ -87,6 +87,7 @@ export async function POST(
         coeffDate: result.detail.coeffDate.toString(),
         coeffCapacite: result.detail.coeffCapacite.toString(),
         marge: result.detail.marge.toString(),
+        ajustementCustom: result.detail.ajustementCustom.toString(),
         envoyeLe: new Date(),
       })
       .returning({ id: devis.id, reference: devis.reference });
