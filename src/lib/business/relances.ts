@@ -17,7 +17,7 @@ interface RelanceAEnvoyer {
 }
 
 const DELAIS_NORMAL = [3, 7];
-const DELAIS_URGENT = [1, 2, 4];
+const DELAIS_URGENT = [1, 2];
 
 function joursDepuis(date: Date): number {
   const now = new Date();

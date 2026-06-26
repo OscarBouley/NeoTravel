@@ -17,7 +17,7 @@ Prototype d'automatisation du cycle commercial de NeoTravel — PME de transport
 - **Tableau de bord** avec 10 KPIs : leads, devis générés/envoyés/acceptés/refusés, taux de conversion, CA, demandes urgentes, relances
 - **Simulateur de devis** : visualisation du détail de calcul, modification des coefficients (saisonnalité, délai, capacité, marge), remise personnalisée en % ou €, preview PDF en temps réel
 - **Multi-devis** : possibilité de créer plusieurs versions de devis par demande (v1, v2, v3...)
-- **Relances automatiques** : emails de relance à J+3/J+7 (normal) ou J+1/J+2/J+4 (urgent si prestation ≤7 jours), pas de relance si date dépassée
+- **Relances automatiques** : emails de relance à J+3/J+7 (normal) ou J+1/J+2 (urgent si prestation ≤7 jours), pas de relance si date dépassée
 - **Validation humaine** : le commercial review et envoie le devis — pas d'envoi automatique
 - **Escalade HITL** : >85 passagers → renvoi au commercial avec possibilité de créer un devis manuellement
 
@@ -221,9 +221,9 @@ En prod, Vercel Cron exécute automatiquement chaque jour à 9h (configuré dans
 
 ### Calendrier de relance
 
-| Type | Relance 1 | Relance 2 | Relance 3 |
-|---|---|---|---|
-| Normal | J+3 | J+7 | — |
-| Urgent (prestation ≤7j) | J+1 | J+2 | J+4 |
+| Type | Relance 1 | Relance 2 |
+|---|---|---|
+| Normal | J+3 | J+7 |
+| Urgent (prestation ≤7j) | J+1 | J+2 |
 
 Pas de relance si : devis accepté/refusé, date de prestation dépassée.
