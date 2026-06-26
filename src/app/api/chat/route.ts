@@ -7,6 +7,7 @@ import { leads, prospects, devis } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { calculerDistanceKm } from "@/lib/geo/distance";
 import { calculerDevis } from "@/lib/business/calculer-devis";
+import { logger } from "@/lib/logger";
 
 const SYSTEM_PROMPT = `Tu es l'assistant commercial de NeoTravel, spécialiste du transport de groupe (bus, autocar, minibus avec chauffeur).
 
@@ -104,18 +105,15 @@ const devisSchema = z.object({
 type DevisInput = z.infer<typeof devisSchema>;
 
 async function executeCreerDevis(params: DevisInput) {
-  console.log("\n🚀 === DÉBUT CRÉATION DEVIS ===");
-  console.log("📋 Params reçus:", JSON.stringify(params, null, 2));
+  logger.ia("DÉBUT CRÉATION DEVIS", `prospect: ${params.prenom} ${params.nom} (${params.email})`);
 
   // 1. Upsert prospect
-  console.log("\n👤 Step 1 — Upsert prospect...");
   let [prospect] = await db
     .select()
     .from(prospects)
     .where(eq(prospects.email, params.email));
 
   if (prospect) {
-    console.log(`  ✅ Prospect existant trouvé (${prospect.id.slice(0, 8)}), mise à jour...`);
     [prospect] = await db
       .update(prospects)
       .set({
@@ -127,7 +125,6 @@ async function executeCreerDevis(params: DevisInput) {
       .where(eq(prospects.id, prospect.id))
       .returning();
   } else {
-    console.log("  ➕ Nouveau prospect, création...");
     [prospect] = await db
       .insert(prospects)
       .values({
@@ -138,11 +135,9 @@ async function executeCreerDevis(params: DevisInput) {
         societe: params.societe,
       })
       .returning();
-    console.log(`  ✅ Prospect créé (${prospect.id.slice(0, 8)})`);
   }
 
   // 2. Créer le lead
-  console.log("\n📝 Step 2 — Création du lead...");
   const [lead] = await db
     .insert(leads)
     .values({
@@ -158,10 +153,9 @@ async function executeCreerDevis(params: DevisInput) {
       voyageursMax: params.voyageurs_max,
     })
     .returning({ id: leads.id });
-  console.log(`  ✅ Lead créé (${lead.id.slice(0, 8)})`);
+  logger.ia("Lead créé", `id: ${lead.id.slice(0, 8)}, trajet: ${params.depart_ville} → ${params.arrivee_ville}`);
 
   // 3. Calculer la distance
-  console.log("\n🗺️  Step 3 — Calcul de la distance...");
   let distanceKm: number;
   try {
     distanceKm = await calculerDistanceKm(
@@ -169,7 +163,7 @@ async function executeCreerDevis(params: DevisInput) {
       params.arrivee_ville,
     );
   } catch (err) {
-    console.error("  ❌ Erreur calcul distance:", err);
+    logger.ia("ERREUR calcul distance", `${params.depart_ville} → ${params.arrivee_ville}: ${err}`);
     await db
       .update(leads)
       .set({ status: "Erreur distance" })
@@ -182,7 +176,6 @@ async function executeCreerDevis(params: DevisInput) {
   }
 
   // 4. Calculer le prix
-  console.log("\n💰 Step 4 — Calcul du prix...");
   const nbPassagers = params.voyageurs_max;
   const result = calculerDevis({
     distanceKm,
@@ -190,12 +183,11 @@ async function executeCreerDevis(params: DevisInput) {
     dateDepart: params.depart_date,
     nbPassagers,
   });
-  console.log(`  💶 Prix HT: ${result.prixHT}€ | TTC: ${result.prixTTC}€`);
-  console.log(`  📊 Coefficients — saison: ${result.detail.coeffSaison}, date: ${result.detail.coeffDate}, capacité: ${result.detail.coeffCapacite}`);
+  logger.ia("Prix calculé", `HT: ${result.prixHT}€ | TTC: ${result.prixTTC}€ | distance: ${distanceKm}km`);
 
   if (result.detail.renvoyerCommercial || params.complexe) {
     const raison = result.detail.renvoyerCommercial ? ">85 passagers" : "cas complexe signalé par l'IA";
-    console.log(`  ⚠️  ${raison} → renvoi au commercial`);
+    logger.ia("Renvoi au commercial", `lead: ${lead.id.slice(0, 8)}, raison: ${raison}`);
     await db
       .update(leads)
       .set({ status: "Renvoyé au commercial" })
@@ -212,7 +204,6 @@ async function executeCreerDevis(params: DevisInput) {
 
   // 5. Sauvegarder le devis en base (sans envoyer l'email — le commercial validera depuis le dashboard)
   const reference = `NT-${Date.now().toString(36).toUpperCase()}`;
-  console.log(`\n💾 Step 5 — Sauvegarde du devis en base (réf: ${reference})...`);
   const [devisRecord] = await db
     .insert(devis)
     .values({
@@ -227,7 +218,6 @@ async function executeCreerDevis(params: DevisInput) {
       marge: result.detail.marge.toString(),
     })
     .returning({ id: devis.id });
-  console.log(`  ✅ Devis sauvegardé (${devisRecord.id.slice(0, 8)})`);
 
   // 6. Mettre à jour le statut du lead
   await db
@@ -235,7 +225,7 @@ async function executeCreerDevis(params: DevisInput) {
     .set({ status: "Devis généré" })
     .where(eq(leads.id, lead.id));
 
-  console.log("\n🎉 === DEVIS TERMINÉ ===\n");
+  logger.ia("Devis créé", `ref: ${reference}, lead: ${lead.id.slice(0, 8)}, TTC: ${Math.round(result.prixTTC)}€`);
 
   return {
     success: true,

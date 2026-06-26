@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { relances } from "@/lib/db/schema";
 import { getRelancesAEnvoyer } from "@/lib/business/relances";
 import { envoyerRelance } from "@/lib/email/envoyer-relance";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   const secret = request.nextUrl.searchParams.get("secret");
@@ -13,19 +14,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log("\n⏰ === CRON RELANCES ===");
-
     const dues = await getRelancesAEnvoyer();
-    console.log(`📋 ${dues.length} relance(s) à envoyer`);
+    logger.cron("Relances déclenchées", `${dues.length} relance(s) à envoyer`);
 
     const resultats = [];
 
     for (const relance of dues) {
       try {
-        console.log(
-          `  📧 ${relance.type} → ${relance.prospectEmail} (${relance.reference})${relance.urgent ? " [URGENT]" : ""}`,
-        );
-
         await envoyerRelance(relance);
 
         await db.insert(relances).values({
@@ -41,9 +36,9 @@ export async function GET(request: NextRequest) {
           status: "sent",
         });
 
-        console.log(`  ✅ Envoyé`);
+        logger.cron("Relance envoyée", `${relance.type} → ${relance.prospectEmail} (${relance.reference})${relance.urgent ? " [URGENT]" : ""}`);
       } catch (err) {
-        console.error(`  ❌ Erreur:`, err);
+        logger.cron("ERREUR relance", `${relance.type} → ${relance.prospectEmail}: ${err}`);
         resultats.push({
           devisId: relance.devisId,
           email: relance.prospectEmail,
@@ -54,7 +49,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log(`\n🏁 Terminé — ${resultats.filter((r) => r.status === "sent").length}/${dues.length} envoyées\n`);
+    logger.cron("Relances terminées", `${resultats.filter((r) => r.status === "sent").length}/${dues.length} envoyées`);
 
     return NextResponse.json({
       total: dues.length,
@@ -63,7 +58,7 @@ export async function GET(request: NextRequest) {
       details: resultats,
     });
   } catch (error: unknown) {
-    console.error("Erreur cron relances:", error);
+    logger.system("ERREUR cron relances", `${error}`);
     const message =
       error instanceof Error ? error.message : "Erreur interne";
     return NextResponse.json({ error: message }, { status: 500 });

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { leads, prospects, devis } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { envoyerDevis } from "@/lib/email/envoyer-devis";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   _request: NextRequest,
@@ -68,12 +69,14 @@ export async function POST(
       .set({ status: "Devis envoyé" })
       .where(eq(leads.id, d.leadId));
 
+    logger.commercial("Devis envoyé", `ref: ${d.reference}, email: ${prospect.email}`);
+
     return NextResponse.json({
       success: true,
       message: `Devis ${d.reference} envoyé à ${prospect.email}`,
     });
   } catch (error: unknown) {
-    console.error("Erreur envoi devis:", error);
+    logger.system("ERREUR envoi devis", `${error}`);
     const message =
       error instanceof Error ? error.message : "Erreur interne";
     return NextResponse.json({ error: message }, { status: 500 });
