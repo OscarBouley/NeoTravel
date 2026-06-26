@@ -19,6 +19,26 @@ interface DevisData {
   envoyeLe: Date | null;
 }
 
+interface LeadInfo {
+  departVille: string | null;
+  arriveeVille: string | null;
+  departDate: string | null;
+  departHeure: string | null;
+  arriveeDate: string | null;
+  arriveeHeure: string | null;
+  besoin: string | null;
+  voyageursMin: number | null;
+  voyageursMax: number | null;
+}
+
+interface ProspectInfo {
+  nom: string | null;
+  prenom: string | null;
+  email: string;
+  telephone: string | null;
+  societe: string | null;
+}
+
 interface DevisPreviewProps {
   devisId: string;
   leadId: string;
@@ -26,6 +46,8 @@ interface DevisPreviewProps {
   totalDevis: number;
   leadStatus?: string;
   leadBesoin?: string;
+  leadInfo?: LeadInfo;
+  prospectInfo?: ProspectInfo;
   onClose: () => void;
   onDevisCreated?: (devis: {
     id: string; version: number; reference: string;
@@ -73,6 +95,12 @@ function getPrixBaseFromDistance(distanceKm: number): number {
   return distanceKm * 2 * 2.5;
 }
 
+const BESOIN_LABELS: Record<string, string> = {
+  aller_simple: "Aller simple",
+  aller_retour: "Aller-retour",
+  circuit: "Circuit",
+};
+
 export default function DevisPreview({
   devisId,
   leadId,
@@ -80,6 +108,8 @@ export default function DevisPreview({
   totalDevis,
   leadStatus,
   leadBesoin,
+  leadInfo,
+  prospectInfo,
   onClose,
   onDevisCreated,
   embedded = false,
@@ -104,6 +134,27 @@ export default function DevisPreview({
   const [currentVersion, setCurrentVersion] = useState(devisData.version);
   const [nextVersion, setNextVersion] = useState(totalDevis + 1);
   const [devisEnvoye, setDevisEnvoye] = useState(!!devisData.envoyeLe);
+
+  const [editingInfo, setEditingInfo] = useState(false);
+  const [editProspect, setEditProspect] = useState({
+    nom: prospectInfo?.nom ?? "",
+    prenom: prospectInfo?.prenom ?? "",
+    email: prospectInfo?.email ?? "",
+    telephone: prospectInfo?.telephone ?? "",
+    societe: prospectInfo?.societe ?? "",
+  });
+  const [editLead, setEditLead] = useState({
+    departVille: leadInfo?.departVille ?? "",
+    arriveeVille: leadInfo?.arriveeVille ?? "",
+    departDate: leadInfo?.departDate ?? "",
+    departHeure: leadInfo?.departHeure ?? "",
+    arriveeDate: leadInfo?.arriveeDate ?? "",
+    arriveeHeure: leadInfo?.arriveeHeure ?? "",
+    besoin: leadInfo?.besoin ?? "aller_simple",
+    voyageursMin: leadInfo?.voyageursMin ?? 0,
+    voyageursMax: leadInfo?.voyageursMax ?? 0,
+  });
+  const [savingInfo, setSavingInfo] = useState(false);
 
   const isAccepte = leadStatus === "Devis accepté";
   const fieldsLocked = devisEnvoye || isAccepte;
@@ -182,6 +233,35 @@ export default function DevisPreview({
     window.location.reload();
   }
 
+  async function handleSaveInfo() {
+    setSavingInfo(true);
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          departVille: editLead.departVille,
+          arriveeVille: editLead.arriveeVille,
+          departDate: editLead.departDate || null,
+          departHeure: editLead.departHeure || null,
+          arriveeDate: editLead.arriveeDate || null,
+          arriveeHeure: editLead.arriveeHeure || null,
+          besoin: editLead.besoin,
+          voyageursMin: editLead.voyageursMin || null,
+          voyageursMax: editLead.voyageursMax || null,
+          prospectNom: editProspect.nom,
+          prospectPrenom: editProspect.prenom,
+          prospectEmail: editProspect.email,
+          prospectTelephone: editProspect.telephone,
+          prospectSociete: editProspect.societe,
+        }),
+      });
+      if (!res.ok) { alert((await res.json()).error || "Erreur"); return; }
+      setEditingInfo(false);
+      router.refresh();
+    } finally { setSavingInfo(false); }
+  }
+
   const isEmbedded = embedded;
   const txtLabel = isEmbedded ? "text-gray-500" : "text-navy-400";
   const txtValue = isEmbedded ? "text-gray-900" : "text-navy-100";
@@ -238,6 +318,110 @@ export default function DevisPreview({
           </span>
         )}
       </div>
+
+      {/* Editable client & voyage info */}
+      {(leadInfo || prospectInfo) && (
+        <div className={`mb-4 rounded-lg p-3 ${isEmbedded ? "bg-gray-50 border border-gray-100" : "bg-navy-800"}`}>
+          <div className="flex items-center justify-between mb-2">
+            <p className={`text-xs font-semibold ${txtLabel}`}>Infos client & voyage</p>
+            <button
+              onClick={() => setEditingInfo(!editingInfo)}
+              className={`text-xs font-medium ${isEmbedded ? "text-blue-500 hover:text-blue-700" : "text-lime-400 hover:text-lime-300"}`}
+            >
+              {editingInfo ? "Fermer" : "Modifier"}
+            </button>
+          </div>
+          {editingInfo ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Prénom</label>
+                  <input value={editProspect.prenom} onChange={(e) => setEditProspect({ ...editProspect, prenom: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                </div>
+                <div>
+                  <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Nom</label>
+                  <input value={editProspect.nom} onChange={(e) => setEditProspect({ ...editProspect, nom: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                </div>
+              </div>
+              <div>
+                <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Email</label>
+                <input type="email" value={editProspect.email} onChange={(e) => setEditProspect({ ...editProspect, email: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Téléphone</label>
+                  <input value={editProspect.telephone} onChange={(e) => setEditProspect({ ...editProspect, telephone: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                </div>
+                <div>
+                  <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Société</label>
+                  <input value={editProspect.societe} onChange={(e) => setEditProspect({ ...editProspect, societe: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                </div>
+              </div>
+              <div className={`border-t pt-2 ${isEmbedded ? "border-gray-200" : "border-navy-700/50"}`}>
+                <p className={`mb-2 text-[10px] font-semibold ${txtLabel}`}>Voyage</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Ville départ</label>
+                    <input value={editLead.departVille} onChange={(e) => setEditLead({ ...editLead, departVille: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                  </div>
+                  <div>
+                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Ville arrivée</label>
+                    <input value={editLead.arriveeVille} onChange={(e) => setEditLead({ ...editLead, arriveeVille: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                  </div>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Date départ</label>
+                    <input type="date" value={editLead.departDate} onChange={(e) => setEditLead({ ...editLead, departDate: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                  </div>
+                  <div>
+                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Heure départ</label>
+                    <input type="time" value={editLead.departHeure} onChange={(e) => setEditLead({ ...editLead, departHeure: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                  </div>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Date retour</label>
+                    <input type="date" value={editLead.arriveeDate} onChange={(e) => setEditLead({ ...editLead, arriveeDate: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                  </div>
+                  <div>
+                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Heure retour</label>
+                    <input type="time" value={editLead.arriveeHeure} onChange={(e) => setEditLead({ ...editLead, arriveeHeure: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                  </div>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Type</label>
+                    <select value={editLead.besoin} onChange={(e) => setEditLead({ ...editLead, besoin: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`}>
+                      <option value="aller_simple">Aller simple</option>
+                      <option value="aller_retour">Aller-retour</option>
+                      <option value="circuit">Circuit</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Passagers</label>
+                    <input type="number" min="1" value={editLead.voyageursMax || ""} onChange={(e) => setEditLead({ ...editLead, voyageursMax: parseInt(e.target.value) || 0, voyageursMin: parseInt(e.target.value) || 0 })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={handleSaveInfo}
+                disabled={savingInfo}
+                className={`mt-1 w-full rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${btnPrimary}`}
+              >
+                {savingInfo ? "Sauvegarde..." : "Enregistrer les modifications"}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <p className={`text-xs ${txtValue}`}>{editProspect.prenom} {editProspect.nom} {editProspect.societe ? `(${editProspect.societe})` : ""}</p>
+              <p className={`text-xs ${txtLabel}`}>{editProspect.email}</p>
+              <p className={`text-xs ${txtLabel}`}>{editLead.departVille} → {editLead.arriveeVille} · {BESOIN_LABELS[editLead.besoin] ?? editLead.besoin}</p>
+              {editLead.voyageursMax > 0 && <p className={`text-xs ${txtLabel}`}>{editLead.voyageursMax} passagers</p>}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className={`space-y-3 ${fieldsLocked ? "opacity-60" : ""}`}>
         <div>

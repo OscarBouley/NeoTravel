@@ -251,6 +251,8 @@ export default function PipelineBoard({
     leadId: string;
     leadStatus: string;
     leadBesoin: string;
+    lead: Lead;
+    prospect: Prospect;
     totalDevis: number;
     allDevis: Devis[];
     devisStatusMap: Record<string, string>;
@@ -290,6 +292,8 @@ export default function PipelineBoard({
       leadId: row.lead.id,
       leadStatus: statusMap[devis.id] ?? row.lead.status,
       leadBesoin: row.lead.besoin ?? "aller_simple",
+      lead: row.lead,
+      prospect: row.prospect,
       totalDevis: validDevis.length,
       allDevis: sorted,
       devisStatusMap: statusMap,
@@ -513,6 +517,8 @@ export default function PipelineBoard({
                   totalDevis={previewState.totalDevis}
                   leadStatus={previewState.leadStatus}
                   leadBesoin={previewState.leadBesoin}
+                  leadInfo={previewState.lead}
+                  prospectInfo={previewState.prospect}
                   onClose={() => { setPreviewState(null); router.refresh(); }}
                   onDevisCreated={(newDevis) => {
                     const newDevisData: Devis = {
