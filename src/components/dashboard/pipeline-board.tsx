@@ -121,7 +121,7 @@ function ContactTooltip({ prospect }: { prospect: Prospect }) {
       </p>
       {showTooltip && (
         <div
-          className="absolute left-full top-0 z-30 ml-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg whitespace-nowrap"
+          className="absolute left-0 top-full z-30 mt-1 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg whitespace-nowrap"
           onClick={(e) => e.stopPropagation()}
         >
           <p
