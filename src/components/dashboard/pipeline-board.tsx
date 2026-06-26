@@ -303,7 +303,7 @@ export default function PipelineBoard({
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-gray-50">
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 bg-white px-4 py-3 md:px-6">
         <div className="flex items-center gap-3">
           <a href="/" className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-lime-400 text-sm font-bold text-navy-950">N</div>
@@ -331,7 +331,7 @@ export default function PipelineBoard({
 
       {/* HITL Alert */}
       {hitlCount > 0 && (
-        <div className="flex items-center gap-3 border-b border-orange-200 bg-orange-50 px-6 py-2.5">
+        <div className="flex items-center gap-3 border-b border-orange-200 bg-orange-50 px-4 py-2.5 md:px-6">
           <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">!</div>
           <p className="text-sm text-orange-800">
             <span className="font-semibold">{hitlCount} demande{hitlCount > 1 ? "s" : ""}</span>{" "}
@@ -341,7 +341,7 @@ export default function PipelineBoard({
       )}
 
       {/* KPIs */}
-      <div className="grid grid-cols-6 gap-3 px-6 py-4">
+      <div className="grid grid-cols-2 gap-3 px-4 py-4 sm:grid-cols-3 md:px-6 lg:grid-cols-6">
         {/* Leads */}
         <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
           <p className="text-xs font-medium text-gray-400">Leads aujourd&apos;hui</p>
@@ -436,7 +436,7 @@ export default function PipelineBoard({
       </div>
 
       {/* Kanban */}
-      <div className="flex flex-1 gap-4 overflow-x-auto px-6 pb-6">
+      <div className="flex flex-1 gap-3 overflow-x-auto px-4 pb-4 md:gap-4 md:px-6 md:pb-6">
         {COLUMN_CONFIG.map((col) => {
           const rows = columns[col.key].filter(filterRow).sort((a, b) => {
             const aUrgent = a.lead.departDate && Math.ceil((new Date(a.lead.departDate).getTime() - Date.now()) / 86400000) <= 7 ? 1 : 0;
@@ -444,7 +444,7 @@ export default function PipelineBoard({
             return bUrgent - aUrgent;
           });
           return (
-            <div key={col.key} className="flex w-[260px] shrink-0 flex-col">
+            <div key={col.key} className="flex w-[220px] shrink-0 flex-col sm:w-[260px]">
               <div className="mb-3 flex items-center gap-2">
                 <span className={`h-2 w-2 rounded-full ${col.dot}`} />
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
