@@ -157,7 +157,7 @@ src/
 | `next.config.ts` | Config Next.js (`serverExternalPackages` pour postgres, react-pdf, nodemailer) |
 | `vercel.json` | Configuration Vercel Cron (relances à 9h chaque jour) |
 | `.env.example` | Template des variables d'environnement |
-| `CLAUDE.md` | Contexte projet et règles pour l'assistant IA de dev |
+
 
 ---
 
