@@ -255,7 +255,7 @@ export default function PipelineBoard({
     devisStatusMap: Record<string, string>;
   } | null>(null);
 
-  const hitlCount = columns.HITL.length;
+  const hitlCount = columns.HITL.length + columns.NOUVEAU.length;
 
   function filterRow(row: GroupedRow): boolean {
     if (!search) return true;
