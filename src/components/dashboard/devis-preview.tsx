@@ -259,7 +259,7 @@ export default function DevisPreview({
         <div>
           <label className={`mb-1 block text-xs ${txtLabel}`}>Marge</label>
           <div className="flex items-center gap-2">
-            <input disabled={fieldsLocked} type="number" value={Math.round(marge * 100)} onChange={(e) => setMarge(parseFloat(e.target.value) / 100)} className={`w-20 rounded-lg border px-2 py-1.5 text-xs focus:outline-none ${bgInput}`} />
+            <input disabled={fieldsLocked} type="number" min="0" value={Math.round(marge * 100)} onChange={(e) => setMarge(Math.max(0, parseFloat(e.target.value) || 0) / 100)} className={`w-20 rounded-lg border px-2 py-1.5 text-xs focus:outline-none ${bgInput}`} />
             <span className={`text-xs ${txtLabel}`}>%</span>
           </div>
         </div>
@@ -267,7 +267,7 @@ export default function DevisPreview({
           <label className={`mb-1 block text-xs ${txtLabel}`}>Remise personnalisée</label>
           <input disabled={fieldsLocked} value={customLabel} onChange={(e) => setCustomLabel(e.target.value)} placeholder="Ex: Remise fidélité..." className={`mb-2 w-full rounded-lg border px-2 py-1.5 text-xs placeholder:opacity-50 focus:outline-none ${bgInput}`} />
           <div className="flex items-center gap-2">
-            <input disabled={fieldsLocked} type="number" value={customValue} onChange={(e) => setCustomValue(parseFloat(e.target.value) || 0)} className={`w-20 rounded-lg border px-2 py-1.5 text-xs focus:outline-none ${bgInput}`} />
+            <input disabled={fieldsLocked} type="number" min="0" value={customValue} onChange={(e) => setCustomValue(Math.max(0, parseFloat(e.target.value) || 0))} className={`w-20 rounded-lg border px-2 py-1.5 text-xs focus:outline-none ${bgInput}`} />
             <select disabled={fieldsLocked} value={customMode} onChange={(e) => setCustomMode(e.target.value as "pct" | "eur")} className={`rounded-lg border px-2 py-1.5 text-xs focus:outline-none ${bgInput}`}>
               <option value="pct">%</option>
               <option value="eur">€</option>

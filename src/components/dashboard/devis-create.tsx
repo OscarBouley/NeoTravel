@@ -169,8 +169,9 @@ export default function DevisCreate({ leadId, onClose }: DevisCreateProps) {
             </label>
             <input
               type="number"
+              min="0"
               value={marge}
-              onChange={(e) => setMarge(parseFloat(e.target.value) || 0)}
+              onChange={(e) => setMarge(Math.max(0, parseFloat(e.target.value) || 0))}
               className="w-20 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-400 focus:outline-none"
             />
           </div>
