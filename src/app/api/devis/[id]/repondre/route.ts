@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { leads, devis } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   request: NextRequest,
@@ -54,9 +55,11 @@ export async function POST(
       .set({ status: newStatus })
       .where(eq(leads.id, d.leadId));
 
+    logger.system("Réponse prospect", `devis: ${d.reference}, action: ${action} → ${newStatus}`);
+
     return NextResponse.json({ success: true, status: newStatus });
   } catch (error: unknown) {
-    console.error("Erreur réponse devis:", error);
+    logger.system("ERREUR réponse devis", `${error}`);
     const message =
       error instanceof Error ? error.message : "Erreur interne";
     return NextResponse.json({ error: message }, { status: 500 });

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { leads, devis } from "@/lib/db/schema";
 import { eq, desc, count } from "drizzle-orm";
 import { calculerDevis } from "@/lib/business/calculer-devis";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   request: NextRequest,
@@ -98,6 +99,8 @@ export async function POST(
       .set({ status: "Devis généré" })
       .where(eq(leads.id, id));
 
+    logger.commercial("Devis custom créé", `ref: ${reference}, lead: ${id.slice(0, 8)}, v${newVersion}, TTC: ${Math.round(result.prixTTC)}€`);
+
     return NextResponse.json({
       success: true,
       devis: {
@@ -110,7 +113,7 @@ export async function POST(
       },
     });
   } catch (error: unknown) {
-    console.error("Erreur création devis custom:", error);
+    logger.system("ERREUR création devis custom", `${error}`);
     const message =
       error instanceof Error ? error.message : "Erreur interne";
     return NextResponse.json({ error: message }, { status: 500 });

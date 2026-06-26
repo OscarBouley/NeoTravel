@@ -34,6 +34,10 @@ yarn-error.log*
 .env*
 !.env.example
 
+# logs applicatifs (dossier versionné, contenu ignoré)
+LOGS/*
+!LOGS/.gitkeep
+
 # vercel
 .vercel
 

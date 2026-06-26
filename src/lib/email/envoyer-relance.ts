@@ -17,7 +17,6 @@ interface RelanceData {
 const SUJETS: Record<number, string> = {
   1: "Votre devis NeoTravel vous attend",
   2: "Avez-vous eu le temps de consulter votre devis ?",
-  3: "Dernière chance — votre devis NeoTravel expire bientôt",
 };
 
 function getCorps(data: RelanceData): string {
@@ -47,13 +46,13 @@ function getCorps(data: RelanceData): string {
   }
 
   return `
-    <p>${data.urgent ? "Votre date de départ approche rapidement. " : ""}Votre devis <strong>n°${data.reference}</strong>
-    est en attente depuis plusieurs jours.</p>
+    <p>Votre devis <strong>n°${data.reference}</strong> pour le trajet
+    ${data.departVille} → ${data.arriveeVille} est toujours en attente de votre réponse.</p>
     <p style="font-size: 20px; font-weight: bold; color: #8DB600; text-align: center; margin: 16px 0;">
       ${prix} € TTC
     </p>
-    <p>Si nous n'avons pas de retour de votre part, nous ne pourrons plus garantir
-    la disponibilité du véhicule. Faites-nous savoir votre décision :</p>
+    <p>N'hésitez pas à nous faire part de votre décision afin que nous puissions
+    réserver votre véhicule dans les meilleurs délais.</p>
   `;
 }
 
