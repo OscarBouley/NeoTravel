@@ -240,7 +240,7 @@ export default function PipelineBoard({
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [createForLead, setCreateForLead] = useState<string | null>(null);
+  const [createForLead, setCreateForLead] = useState<{ id: string; lead: Lead; prospect: Prospect } | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => router.refresh(), 15000);
@@ -456,7 +456,7 @@ export default function PipelineBoard({
                     key={row.lead.id}
                     row={row}
                     columnKey={col.key}
-                    onCreate={() => setCreateForLead(row.lead.id)}
+                    onCreate={() => setCreateForLead({ id: row.lead.id, lead: row.lead, prospect: row.prospect })}
                     onPreview={(devis) => openPreview(row, devis)}
                   />
                 ))}
@@ -472,7 +472,7 @@ export default function PipelineBoard({
       </div>
 
       {createForLead && (
-        <DevisCreate leadId={createForLead} onClose={() => setCreateForLead(null)} />
+        <DevisCreate leadId={createForLead.id} lead={createForLead.lead} prospect={createForLead.prospect} onClose={() => setCreateForLead(null)} />
       )}
 
       {previewState && (
