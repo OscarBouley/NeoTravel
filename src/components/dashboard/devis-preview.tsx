@@ -54,6 +54,7 @@ interface DevisPreviewProps {
     prixHT: number; prixTTC: number;
     detail: { coeffSaison: number; coeffDate: number; coeffCapacite: number; marge: number; ajustementCustom: number };
   }) => void;
+  onPriceChange?: (prixHT: number, prixTTC: number) => void;
   embedded?: boolean;
 }
 
@@ -95,12 +96,6 @@ function getPrixBaseFromDistance(distanceKm: number): number {
   return distanceKm * 2 * 2.5;
 }
 
-const BESOIN_LABELS: Record<string, string> = {
-  aller_simple: "Aller simple",
-  aller_retour: "Aller-retour",
-  circuit: "Circuit",
-};
-
 export default function DevisPreview({
   devisId,
   leadId,
@@ -112,6 +107,7 @@ export default function DevisPreview({
   prospectInfo,
   onClose,
   onDevisCreated,
+  onPriceChange,
   embedded = false,
 }: DevisPreviewProps) {
   const router = useRouter();
@@ -190,6 +186,10 @@ export default function DevisPreview({
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
+
+  useEffect(() => {
+    onPriceChange?.(prixHT, prixTTC);
+  }, [prixHT, prixTTC, onPriceChange]);
 
   async function handleCreerNouveau() {
     setSaving(true);
@@ -321,106 +321,105 @@ export default function DevisPreview({
 
       {/* Editable client & voyage info */}
       {(leadInfo || prospectInfo) && (
-        <div className={`mb-4 rounded-lg p-3 ${isEmbedded ? "bg-gray-50 border border-gray-100" : "bg-navy-800"}`}>
-          <div className="flex items-center justify-between mb-2">
-            <p className={`text-xs font-semibold ${txtLabel}`}>Infos client & voyage</p>
-            <button
-              onClick={() => setEditingInfo(!editingInfo)}
-              className={`text-xs font-medium ${isEmbedded ? "text-blue-500 hover:text-blue-700" : "text-lime-400 hover:text-lime-300"}`}
-            >
-              {editingInfo ? "Fermer" : "Modifier"}
-            </button>
-          </div>
+        <>
           {editingInfo ? (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Prénom</label>
-                  <input value={editProspect.prenom} onChange={(e) => setEditProspect({ ...editProspect, prenom: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
-                </div>
-                <div>
-                  <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Nom</label>
-                  <input value={editProspect.nom} onChange={(e) => setEditProspect({ ...editProspect, nom: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
-                </div>
+            <div className={`mb-4 rounded-lg p-3 ${isEmbedded ? "bg-gray-50 border border-gray-100" : "bg-navy-800"}`}>
+              <div className="flex items-center justify-between mb-2">
+                <p className={`text-xs font-semibold ${txtLabel}`}>Modifier les infos</p>
+                <button onClick={() => setEditingInfo(false)} className={`text-xs font-medium ${isEmbedded ? "text-gray-400 hover:text-gray-600" : "text-navy-400 hover:text-navy-200"}`}>
+                  Fermer
+                </button>
               </div>
-              <div>
-                <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Email</label>
-                <input type="email" value={editProspect.email} onChange={(e) => setEditProspect({ ...editProspect, email: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Téléphone</label>
-                  <input value={editProspect.telephone} onChange={(e) => setEditProspect({ ...editProspect, telephone: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
-                </div>
-                <div>
-                  <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Société</label>
-                  <input value={editProspect.societe} onChange={(e) => setEditProspect({ ...editProspect, societe: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
-                </div>
-              </div>
-              <div className={`border-t pt-2 ${isEmbedded ? "border-gray-200" : "border-navy-700/50"}`}>
-                <p className={`mb-2 text-[10px] font-semibold ${txtLabel}`}>Voyage</p>
+              <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Ville départ</label>
-                    <input value={editLead.departVille} onChange={(e) => setEditLead({ ...editLead, departVille: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Prénom</label>
+                    <input value={editProspect.prenom} onChange={(e) => setEditProspect({ ...editProspect, prenom: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
                   </div>
                   <div>
-                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Ville arrivée</label>
-                    <input value={editLead.arriveeVille} onChange={(e) => setEditLead({ ...editLead, arriveeVille: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Nom</label>
+                    <input value={editProspect.nom} onChange={(e) => setEditProspect({ ...editProspect, nom: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
                   </div>
                 </div>
-                <div className="mt-2 grid grid-cols-2 gap-2">
+                <div>
+                  <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Email</label>
+                  <input type="email" value={editProspect.email} onChange={(e) => setEditProspect({ ...editProspect, email: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Date départ</label>
-                    <input type="date" value={editLead.departDate} onChange={(e) => setEditLead({ ...editLead, departDate: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Téléphone</label>
+                    <input value={editProspect.telephone} onChange={(e) => setEditProspect({ ...editProspect, telephone: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
                   </div>
                   <div>
-                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Heure départ</label>
-                    <input type="time" value={editLead.departHeure} onChange={(e) => setEditLead({ ...editLead, departHeure: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Société</label>
+                    <input value={editProspect.societe} onChange={(e) => setEditProspect({ ...editProspect, societe: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
                   </div>
                 </div>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Date retour</label>
-                    <input type="date" value={editLead.arriveeDate} onChange={(e) => setEditLead({ ...editLead, arriveeDate: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                <div className={`border-t pt-2 ${isEmbedded ? "border-gray-200" : "border-navy-700/50"}`}>
+                  <p className={`mb-2 text-[10px] font-semibold ${txtLabel}`}>Voyage</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Ville départ</label>
+                      <input value={editLead.departVille} onChange={(e) => setEditLead({ ...editLead, departVille: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                    </div>
+                    <div>
+                      <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Ville arrivée</label>
+                      <input value={editLead.arriveeVille} onChange={(e) => setEditLead({ ...editLead, arriveeVille: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                    </div>
                   </div>
-                  <div>
-                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Heure retour</label>
-                    <input type="time" value={editLead.arriveeHeure} onChange={(e) => setEditLead({ ...editLead, arriveeHeure: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Date départ</label>
+                      <input type="date" value={editLead.departDate} onChange={(e) => setEditLead({ ...editLead, departDate: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                    </div>
+                    <div>
+                      <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Heure départ</label>
+                      <input type="time" value={editLead.departHeure} onChange={(e) => setEditLead({ ...editLead, departHeure: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                    </div>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Date retour</label>
+                      <input type="date" value={editLead.arriveeDate} onChange={(e) => setEditLead({ ...editLead, arriveeDate: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                    </div>
+                    <div>
+                      <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Heure retour</label>
+                      <input type="time" value={editLead.arriveeHeure} onChange={(e) => setEditLead({ ...editLead, arriveeHeure: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                    </div>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Type</label>
+                      <select value={editLead.besoin} onChange={(e) => setEditLead({ ...editLead, besoin: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`}>
+                        <option value="aller_simple">Aller simple</option>
+                        <option value="aller_retour">Aller-retour</option>
+                        <option value="circuit">Circuit</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Passagers</label>
+                      <input type="number" min="1" value={editLead.voyageursMax || ""} onChange={(e) => setEditLead({ ...editLead, voyageursMax: parseInt(e.target.value) || 0, voyageursMin: parseInt(e.target.value) || 0 })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
+                    </div>
                   </div>
                 </div>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Type</label>
-                    <select value={editLead.besoin} onChange={(e) => setEditLead({ ...editLead, besoin: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`}>
-                      <option value="aller_simple">Aller simple</option>
-                      <option value="aller_retour">Aller-retour</option>
-                      <option value="circuit">Circuit</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Passagers</label>
-                    <input type="number" min="1" value={editLead.voyageursMax || ""} onChange={(e) => setEditLead({ ...editLead, voyageursMax: parseInt(e.target.value) || 0, voyageursMin: parseInt(e.target.value) || 0 })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
-                  </div>
-                </div>
+                <button
+                  onClick={handleSaveInfo}
+                  disabled={savingInfo}
+                  className={`mt-1 w-full rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${btnPrimary}`}
+                >
+                  {savingInfo ? "Sauvegarde..." : "Enregistrer les modifications"}
+                </button>
               </div>
-              <button
-                onClick={handleSaveInfo}
-                disabled={savingInfo}
-                className={`mt-1 w-full rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${btnPrimary}`}
-              >
-                {savingInfo ? "Sauvegarde..." : "Enregistrer les modifications"}
-              </button>
             </div>
           ) : (
-            <div className="space-y-1">
-              <p className={`text-xs ${txtValue}`}>{editProspect.prenom} {editProspect.nom} {editProspect.societe ? `(${editProspect.societe})` : ""}</p>
-              <p className={`text-xs ${txtLabel}`}>{editProspect.email}</p>
-              <p className={`text-xs ${txtLabel}`}>{editLead.departVille} → {editLead.arriveeVille} · {BESOIN_LABELS[editLead.besoin] ?? editLead.besoin}</p>
-              {editLead.voyageursMax > 0 && <p className={`text-xs ${txtLabel}`}>{editLead.voyageursMax} passagers</p>}
-            </div>
+            <button
+              onClick={() => setEditingInfo(true)}
+              className={`mb-4 w-full rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${isEmbedded ? "border-gray-200 text-gray-600 hover:bg-gray-50" : "border-navy-700 text-navy-300 hover:bg-navy-800"}`}
+            >
+              Modifier les infos client & voyage
+            </button>
           )}
-        </div>
+        </>
       )}
 
       <div className={`space-y-3 ${fieldsLocked ? "opacity-60" : ""}`}>
@@ -544,7 +543,7 @@ export default function DevisPreview({
             </button>
           </div>
           <div className="flex-1 overflow-hidden">
-            <iframe key={pdfVersion} src={`/api/devis/${currentDevisId}/pdf`} className="h-full w-full" title="Aperçu du devis" />
+            <iframe key={`${pdfVersion}-${Math.round(prixTTC)}`} src={`/api/devis/${currentDevisId}/pdf?prixHT=${prixHT.toFixed(2)}&prixTTC=${prixTTC.toFixed(2)}`} className="h-full w-full" title="Aperçu du devis" />
           </div>
         </div>
       </div>
