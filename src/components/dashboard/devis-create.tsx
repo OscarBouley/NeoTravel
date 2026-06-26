@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface DevisCreateProps {
   leadId: string;
@@ -30,7 +31,7 @@ const CAPACITE_OPTIONS = [
 ];
 
 const selectClass =
-  "w-full rounded-lg border border-navy-700 bg-navy-800 px-2 py-1.5 text-xs text-navy-100 focus:border-lime-400 focus:outline-none";
+  "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-400 focus:outline-none";
 
 export default function DevisCreate({ leadId, onClose }: DevisCreateProps) {
   const [distanceKm, setDistanceKm] = useState<number>(0);
@@ -39,6 +40,7 @@ export default function DevisCreate({ leadId, onClose }: DevisCreateProps) {
   const [coeffDate, setCoeffDate] = useState(0);
   const [coeffCapacite, setCoeffCapacite] = useState(0);
   const [saving, setSaving] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     function handleEsc(e: KeyboardEvent) {
@@ -71,7 +73,8 @@ export default function DevisCreate({ leadId, onClose }: DevisCreateProps) {
         alert(data.error || "Erreur");
         return;
       }
-      window.location.reload();
+      router.refresh();
+      onClose();
     } finally {
       setSaving(false);
     }
@@ -79,20 +82,20 @@ export default function DevisCreate({ leadId, onClose }: DevisCreateProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/80 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl border border-navy-700/50 bg-navy-900 p-6 shadow-2xl"
+        className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-navy-100">
+          <h2 className="text-base font-semibold text-gray-900">
             Créer un devis
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-navy-400 transition-colors hover:bg-navy-800 hover:text-navy-100"
+            className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -100,9 +103,9 @@ export default function DevisCreate({ leadId, onClose }: DevisCreateProps) {
           </button>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs text-navy-400">
+            <label className="mb-1 block text-sm font-medium text-gray-700">
               Distance (km)
             </label>
             <input
@@ -111,12 +114,12 @@ export default function DevisCreate({ leadId, onClose }: DevisCreateProps) {
               value={distanceKm || ""}
               onChange={(e) => setDistanceKm(parseInt(e.target.value) || 0)}
               placeholder="Ex: 350"
-              className="w-full rounded-lg border border-navy-700 bg-navy-800 px-3 py-2 text-sm text-navy-100 placeholder:text-navy-400/50 focus:border-lime-400 focus:outline-none"
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-blue-400 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-navy-400">
+            <label className="mb-1 block text-sm font-medium text-gray-700">
               Saisonnalité
             </label>
             <select
@@ -131,7 +134,7 @@ export default function DevisCreate({ leadId, onClose }: DevisCreateProps) {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-navy-400">
+            <label className="mb-1 block text-sm font-medium text-gray-700">
               Délai demande / départ
             </label>
             <select
@@ -146,7 +149,7 @@ export default function DevisCreate({ leadId, onClose }: DevisCreateProps) {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-navy-400">
+            <label className="mb-1 block text-sm font-medium text-gray-700">
               Capacité
             </label>
             <select
@@ -161,14 +164,14 @@ export default function DevisCreate({ leadId, onClose }: DevisCreateProps) {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-navy-400">
+            <label className="mb-1 block text-sm font-medium text-gray-700">
               Marge (%)
             </label>
             <input
               type="number"
               value={marge}
               onChange={(e) => setMarge(parseFloat(e.target.value) || 0)}
-              className="w-20 rounded-lg border border-navy-700 bg-navy-800 px-2 py-1.5 text-xs text-navy-100 focus:border-lime-400 focus:outline-none"
+              className="w-20 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-400 focus:outline-none"
             />
           </div>
         </div>
@@ -176,7 +179,7 @@ export default function DevisCreate({ leadId, onClose }: DevisCreateProps) {
         <button
           onClick={handleCreer}
           disabled={saving || !distanceKm}
-          className="mt-5 w-full rounded-lg bg-lime-400 px-4 py-2.5 text-sm font-bold text-navy-950 transition-colors hover:bg-lime-300 disabled:opacity-50"
+          className="mt-6 w-full rounded-lg bg-navy-950 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-navy-800 disabled:opacity-50"
         >
           {saving ? "Création..." : "Créer le devis N°1"}
         </button>

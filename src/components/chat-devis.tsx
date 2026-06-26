@@ -12,10 +12,10 @@ function getTextContent(message: UIMessage): string {
 }
 
 const CHIPS = [
-  { label: "Sortie scolaire", emoji: "🎒" },
-  { label: "Séminaire entreprise", emoji: "💼" },
-  { label: "Mariage / événement", emoji: "💍" },
-  { label: "Compétition sportive", emoji: "🏆" },
+  { label: "Sortie scolaire", text: "J'aurais besoin d'un bus pour une sortie scolaire", emoji: "🎒" },
+  { label: "Séminaire entreprise", text: "J'aurais besoin d'un bus pour un séminaire d'entreprise", emoji: "💼" },
+  { label: "Mariage / événement", text: "J'aurais besoin d'un bus pour un mariage", emoji: "💍" },
+  { label: "Compétition sportive", text: "J'aurais besoin d'un bus pour une compétition sportive", emoji: "🏆" },
 ];
 
 export default function ChatDevis() {
@@ -38,8 +38,8 @@ export default function ChatDevis() {
     setInput("");
   }
 
-  function handleChip(label: string) {
-    setInput(label);
+  function handleChip(text: string) {
+    sendMessage({ text });
   }
 
   return (
@@ -128,7 +128,7 @@ export default function ChatDevis() {
               <button
                 key={chip.label}
                 type="button"
-                onClick={() => handleChip(chip.label)}
+                onClick={() => handleChip(chip.text)}
                 className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 transition-all hover:border-lime-400 hover:text-lime-600"
               >
                 <span>{chip.emoji}</span>

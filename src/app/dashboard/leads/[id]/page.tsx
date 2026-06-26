@@ -89,32 +89,6 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      {/* Sidebar */}
-      <aside className="flex w-[220px] shrink-0 flex-col border-r border-navy-800 bg-navy-950">
-        <div className="border-b border-navy-800 p-4">
-          <a href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-lime-400 text-sm font-bold text-navy-950">N</div>
-            <span className="text-base font-bold text-navy-100">NeoTravel</span>
-          </a>
-        </div>
-        <nav className="flex-1 p-3">
-          <a href="/dashboard" className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-navy-400 hover:bg-navy-800/50 hover:text-navy-100">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 0 2-2h2a2 2 0 0 1 2 2m0 10a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m0 10V7m0 10a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2" />
-            </svg>
-            Pipeline
-          </a>
-        </nav>
-        <div className="border-t border-navy-800 p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-navy-700 text-xs font-bold text-navy-100">A</div>
-            <div>
-              <p className="text-sm font-medium text-navy-100">Admin</p>
-              <p className="text-xs text-navy-400">Commercial</p>
-            </div>
-          </div>
-        </div>
-      </aside>
 
       {/* Main */}
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -246,41 +220,39 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             </section>
           </div>
 
-          {/* Right panel — Conversation */}
+          {/* Right panel — PDF Preview */}
           <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
             <div className="flex items-center justify-between border-b border-gray-200 bg-white px-5 py-3">
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Conversation</p>
-              <span className="text-xs text-gray-400">agent IA → vous</span>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+                Aperçu du devis
+              </p>
+              {latestDevis && (
+                <a
+                  href={`/api/devis/${latestDevis.id}/pdf`}
+                  target="_blank"
+                  className="text-xs font-medium text-blue-500 hover:underline"
+                >
+                  Ouvrir le PDF ↗
+                </a>
+              )}
             </div>
 
-            <div className="flex flex-1 flex-col justify-end overflow-y-auto p-5">
-              {/* Empty state */}
-              <div className="flex flex-col items-center justify-center py-10 text-center text-gray-400">
-                <svg className="mb-3 h-10 w-10 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
-                </svg>
-                <p className="text-sm">Historique non disponible</p>
-                <p className="mt-1 text-xs">La conversation IA n&apos;est pas stockée</p>
-              </div>
-            </div>
-
-            {/* Message input */}
-            <div className="border-t border-gray-200 bg-white px-5 py-4">
-              <div className="mb-2 flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-lime-400" />
-                <span className="text-xs font-medium text-gray-500">
-                  Vous répondez maintenant en direct au prospect
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  placeholder="Votre réponse au client..."
-                  className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-400 focus:outline-none"
+            <div className="flex-1 overflow-hidden">
+              {latestDevis ? (
+                <iframe
+                  src={`/api/devis/${latestDevis.id}/pdf`}
+                  className="h-full w-full"
+                  title="Aperçu du devis"
                 />
-                <button className="rounded-xl bg-navy-950 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-navy-800">
-                  Envoyer
-                </button>
-              </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center text-gray-400">
+                  <svg className="mb-3 h-10 w-10 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                  </svg>
+                  <p className="text-sm">Aucun devis généré</p>
+                  <p className="mt-1 text-xs">Créez un devis depuis le pipeline</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

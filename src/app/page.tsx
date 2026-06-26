@@ -22,14 +22,8 @@ export default function Home() {
             <a href="/" className="border-b-2 border-lime-400 pb-0.5 text-navy-100">
               Accueil
             </a>
-            <a href="#" className="text-navy-400 transition-colors hover:text-navy-100">
-              Qui sommes-nous
-            </a>
-            <a href="#" className="text-navy-400 transition-colors hover:text-navy-100">
-              Flotte
-            </a>
-            <a href="#" className="text-navy-400 transition-colors hover:text-navy-100">
-              Avis clients
+            <a href="/dashboard" className="text-navy-400 transition-colors hover:text-navy-100">
+              Dashboard
             </a>
           </nav>
 
@@ -78,7 +72,7 @@ export default function Home() {
           <span className="text-navy-700">•</span>
           <span>200+ autocaristes partenaires</span>
           <span className="text-navy-700">•</span>
-          <span>~60 demandes traitées / jour</span>
+          <span>Des dizaines de demandes traitées par jour</span>
         </div>
       </main>
 
@@ -93,8 +87,8 @@ export default function Home() {
                 </svg>
               </div>
             }
-            title="Réponse en minutes"
-            description="Devis < 5 min, plus 24-72h d'attente"
+            title="Réponse ultra rapide"
+            description="Un devis sur mesure en moins de 5 minutes envoyé directement par mail"
           />
           <FeatureCard
             icon={
@@ -104,8 +98,8 @@ export default function Home() {
                 </svg>
               </div>
             }
-            title="Meilleur prix négocié"
-            description="Réseau d'autocaristes mis en concurrence"
+            title="Meilleurs prix négociés"
+            description="Les meilleurs autocaristes mis en concurrence"
           />
           <FeatureCard
             icon={
@@ -116,7 +110,7 @@ export default function Home() {
               </div>
             }
             title="Conseil humain"
-            description="Un expert sur les cas complexes"
+            description="Un expert compétent disponible pour gérer les demandes complexes"
           />
         </div>
       </section>
