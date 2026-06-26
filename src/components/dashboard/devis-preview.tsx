@@ -311,8 +311,13 @@ export default function DevisPreview({
       {/* Actions */}
       <div className="mt-3 flex flex-col gap-2">
         {!isAccepte && (
-          <button onClick={handleCreerNouveau} disabled={saving} className={`rounded-lg px-4 py-2.5 text-xs font-semibold disabled:opacity-50 ${btnSecondary}`}>
-            {saving ? "Création..." : `Créer un nouveau devis (N°${nextVersion})`}
+          <button
+            onClick={handleCreerNouveau}
+            disabled={saving || (devisEnvoye && leadStatus === "Devis envoyé")}
+            title={devisEnvoye && leadStatus === "Devis envoyé" ? "Un devis est déjà envoyé et en attente de réponse" : undefined}
+            className={`rounded-lg px-4 py-2.5 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed ${btnSecondary}`}
+          >
+            {saving ? "Création..." : devisEnvoye && leadStatus === "Devis envoyé" ? "Devis en attente de réponse" : `Créer un nouveau devis (N°${nextVersion})`}
           </button>
         )}
         {isAccepte ? (
