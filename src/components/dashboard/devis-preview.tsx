@@ -25,6 +25,7 @@ interface DevisPreviewProps {
   devisData: DevisData;
   totalDevis: number;
   leadStatus?: string;
+  leadBesoin?: string;
   onClose: () => void;
   onDevisCreated?: (devis: {
     id: string; version: number; reference: string;
@@ -78,6 +79,7 @@ export default function DevisPreview({
   devisData,
   totalDevis,
   leadStatus,
+  leadBesoin,
   onClose,
   onDevisCreated,
   embedded = false,
@@ -85,15 +87,15 @@ export default function DevisPreview({
   const router = useRouter();
   const distanceKm = devisData.distanceKm;
   const prixBase = getPrixBaseFromDistance(distanceKm);
-  const origPrixHT = parseFloat(devisData.prixHT);
-  const multiplicateur = origPrixHT > prixBase * 1.5 * 1.5 ? 2 : 1;
+  const multiplicateur = leadBesoin === "aller_retour" ? 2 : 1;
 
+  const savedAjustement = parseFloat(devisData.ajustementCustom ?? "0");
   const [marge, setMarge] = useState(parseFloat(devisData.marge ?? "0.15"));
   const [coeffSaison, setCoeffSaison] = useState(parseFloat(devisData.coeffSaison ?? "0"));
   const [coeffDate, setCoeffDate] = useState(parseFloat(devisData.coeffDate ?? "0"));
   const [coeffCapacite, setCoeffCapacite] = useState(parseFloat(devisData.coeffCapacite ?? "0"));
-  const [customLabel, setCustomLabel] = useState("");
-  const [customValue, setCustomValue] = useState(0);
+  const [customLabel, setCustomLabel] = useState(savedAjustement !== 0 ? "Remise" : "");
+  const [customValue, setCustomValue] = useState(savedAjustement !== 0 ? Math.abs(savedAjustement) * 100 : 0);
   const [customMode, setCustomMode] = useState<"pct" | "eur">("pct");
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
