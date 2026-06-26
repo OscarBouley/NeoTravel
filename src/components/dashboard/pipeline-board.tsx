@@ -202,6 +202,13 @@ function PipelineCard({
           : ""}
       </p>
 
+      {row.lead.departDate && (
+        <p className="mt-1 text-xs text-gray-500">
+          Départ: {new Date(row.lead.departDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+          {row.lead.departHeure ? ` à ${row.lead.departHeure.replace(":", "h")}` : ""}
+        </p>
+      )}
+
       <p className="mt-1 text-xs text-gray-400">{timeAgo(row.lead.createdAt)}</p>
 
       <div className="mt-2 flex flex-wrap gap-1">
