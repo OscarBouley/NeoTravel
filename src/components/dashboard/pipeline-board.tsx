@@ -252,6 +252,7 @@ export default function PipelineBoard({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => setDebouncedPrix({ ht, ttc }), 800);
   }, []);
+  const [pdfRefresh, setPdfRefresh] = useState(0);
   const [previewState, setPreviewState] = useState<{
     devis: Devis;
     leadId: string;
@@ -558,6 +559,7 @@ export default function PipelineBoard({
                     router.refresh();
                   }}
                   onPriceChange={handlePriceChange}
+                  onInfoSaved={() => setPdfRefresh((v) => v + 1)}
                   embedded
                 />
               </div>
@@ -580,7 +582,7 @@ export default function PipelineBoard({
               </div>
               <div className="flex-1 overflow-hidden">
                 <iframe
-                  key={`${previewState.devis.id}-${debouncedPrix ? Math.round(debouncedPrix.ttc) : 0}`}
+                  key={`${previewState.devis.id}-${debouncedPrix ? Math.round(debouncedPrix.ttc) : 0}-${pdfRefresh}`}
                   src={`/api/devis/${previewState.devis.id}/pdf${debouncedPrix ? `?prixHT=${debouncedPrix.ht.toFixed(2)}&prixTTC=${debouncedPrix.ttc.toFixed(2)}` : ""}`}
                   className="h-full w-full"
                   title="Aperçu du devis"

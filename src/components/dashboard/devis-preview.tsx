@@ -55,6 +55,7 @@ interface DevisPreviewProps {
     detail: { coeffSaison: number; coeffDate: number; coeffCapacite: number; marge: number; ajustementCustom: number };
   }) => void;
   onPriceChange?: (prixHT: number, prixTTC: number) => void;
+  onInfoSaved?: () => void;
   embedded?: boolean;
 }
 
@@ -108,6 +109,7 @@ export default function DevisPreview({
   onClose,
   onDevisCreated,
   onPriceChange,
+  onInfoSaved,
   embedded = false,
 }: DevisPreviewProps) {
   const router = useRouter();
@@ -258,6 +260,8 @@ export default function DevisPreview({
       });
       if (!res.ok) { alert((await res.json()).error || "Erreur"); return; }
       setEditingInfo(false);
+      setPdfVersion((v) => v + 1);
+      onInfoSaved?.();
       router.refresh();
     } finally { setSavingInfo(false); }
   }
