@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   PieChart,
@@ -246,6 +246,12 @@ export default function PipelineBoard({
     const interval = setInterval(() => router.refresh(), 15000);
     return () => clearInterval(interval);
   }, [router]);
+  const [debouncedPrix, setDebouncedPrix] = useState<{ ht: number; ttc: number } | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handlePriceChange = useCallback((ht: number, ttc: number) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedPrix({ ht, ttc }), 800);
+  }, []);
   const [previewState, setPreviewState] = useState<{
     devis: Devis;
     leadId: string;
@@ -551,6 +557,7 @@ export default function PipelineBoard({
                     });
                     router.refresh();
                   }}
+                  onPriceChange={handlePriceChange}
                   embedded
                 />
               </div>
@@ -573,8 +580,8 @@ export default function PipelineBoard({
               </div>
               <div className="flex-1 overflow-hidden">
                 <iframe
-                  key={previewState.devis.id}
-                  src={`/api/devis/${previewState.devis.id}/pdf`}
+                  key={`${previewState.devis.id}-${debouncedPrix ? Math.round(debouncedPrix.ttc) : 0}`}
+                  src={`/api/devis/${previewState.devis.id}/pdf${debouncedPrix ? `?prixHT=${debouncedPrix.ht.toFixed(2)}&prixTTC=${debouncedPrix.ttc.toFixed(2)}` : ""}`}
                   className="h-full w-full"
                   title="Aperçu du devis"
                 />

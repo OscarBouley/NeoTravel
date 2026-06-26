@@ -233,6 +233,26 @@ L'agent IA (`src/app/api/chat/route.ts`) est configuré avec Claude Sonnet 4 (te
 | `npm run db:generate` | Génère les migrations Drizzle à partir du schéma |
 | `npm run db:migrate` | Applique les migrations sur la base |
 | `npm run db:studio` | Interface web Drizzle Studio |
+| `npm run test` | Lance les tests unitaires (Vitest) |
+| `npm run test:watch` | Tests en mode watch |
+
+---
+
+## Tests
+
+Tests unitaires sur `calculerDevis()` avec Vitest (39 tests) couvrant :
+- **Grille tarifaire** : chaque palier de distance, bascule au-delà de 180 km
+- **Multiplicateur** : aller simple (×1), aller-retour (×2), circuit (×1)
+- **Saisonnalité** : chaque mois de l'année (-7% à +15%)
+- **Délai demande** : prioritaire, urgent, normal, 3 mois+
+- **Capacité** : chaque tranche de passagers, limite 85 pax, escalade HITL à 86+
+- **Overrides** : remplacement individuel de chaque coefficient
+- **TVA et arrondi** : vérification prixTTC = prixHT × 1.10, arrondi 2 décimales
+- **Formule complète** : calculs vérifiables à la main
+
+```bash
+npm run test
+```
 
 ---
 
