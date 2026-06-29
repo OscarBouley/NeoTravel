@@ -217,7 +217,7 @@ function PipelineCard({
 
       <div className="mt-2 flex flex-wrap gap-1">
         {isUrgent && (
-          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">Urgent</span>
+          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">Urgent -7j</span>
         )}
         {row.nbRelances > 0 && (
           <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">
@@ -450,9 +450,12 @@ export default function PipelineBoard({
       <div className="flex flex-1 gap-3 overflow-x-auto px-4 pb-4 md:gap-4 md:px-6 md:pb-6">
         {COLUMN_CONFIG.map((col) => {
           const rows = columns[col.key].filter(filterRow).sort((a, b) => {
-            const aUrgent = a.lead.departDate && Math.ceil((new Date(a.lead.departDate).getTime() - Date.now()) / 86400000) <= 7 ? 1 : 0;
-            const bUrgent = b.lead.departDate && Math.ceil((new Date(b.lead.departDate).getTime() - Date.now()) / 86400000) <= 7 ? 1 : 0;
-            return bUrgent - aUrgent;
+            const aJours = a.lead.departDate ? Math.ceil((new Date(a.lead.departDate).getTime() - Date.now()) / 86400000) : Infinity;
+            const bJours = b.lead.departDate ? Math.ceil((new Date(b.lead.departDate).getTime() - Date.now()) / 86400000) : Infinity;
+            const aUrgent = aJours >= 0 && aJours <= 7 ? 1 : 0;
+            const bUrgent = bJours >= 0 && bJours <= 7 ? 1 : 0;
+            if (aUrgent !== bUrgent) return bUrgent - aUrgent;
+            return aJours - bJours;
           });
           return (
             <div key={col.key} className="flex w-[220px] shrink-0 flex-col sm:w-[260px]">
