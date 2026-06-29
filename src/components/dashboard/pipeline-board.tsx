@@ -16,7 +16,7 @@ export interface Prospect {
   id: string;
   nom: string | null;
   prenom: string | null;
-  email: string;
+  email: string | null;
   telephone: string | null;
   societe: string | null;
 }
@@ -35,6 +35,7 @@ export interface Lead {
   voyageursMin: number | null;
   voyageursMax: number | null;
   noteCommercial: string | null;
+  detailComplexe: string | null;
 }
 
 export interface Devis {
@@ -78,24 +79,15 @@ export interface KanbanStats {
 }
 
 const COLUMN_CONFIG: { key: KanbanColumnKey; label: string; dot: string }[] = [
-  { key: "NOUVEAU",      label: "Erreur distance", dot: "bg-red-300" },
-  { key: "QUALIFIÉ",     label: "Qualifié",      dot: "bg-lime-400" },
-  { key: "DEVIS_ENVOYÉ", label: "Devis envoyé", dot: "bg-blue-500" },
-  { key: "RELANCE",      label: "Relance",       dot: "bg-yellow-400" },
-  { key: "GAGNÉ",        label: "Gagné",         dot: "bg-green-500" },
-  { key: "PERDU",        label: "Perdu",         dot: "bg-red-400" },
-  { key: "HITL",         label: "À traiter",     dot: "bg-orange-400" },
+  { key: "QUALIFIÉ",     label: "Qualifié",                  dot: "bg-lime-400" },
+  { key: "DEVIS_ENVOYÉ", label: "Devis envoyé",              dot: "bg-blue-500" },
+  { key: "RELANCE",      label: "Relance",                   dot: "bg-yellow-400" },
+  { key: "GAGNÉ",        label: "Gagné",                     dot: "bg-green-500" },
+  { key: "PERDU",        label: "Infos supplémentaires",     dot: "bg-red-400" },
+  { key: "HITL",         label: "À traiter (manuel)",        dot: "bg-orange-400" },
+  { key: "NOUVEAU",      label: "Erreur distance (manuel)",  dot: "bg-red-300" },
 ];
 
-function timeAgo(date: Date): string {
-  const diff = Date.now() - new Date(date).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "à l'instant";
-  if (mins < 60) return `il y a ${mins} min`;
-  const h = Math.floor(mins / 60);
-  if (h < 24) return `il y a ${h}h`;
-  return `il y a ${Math.floor(h / 24)}j`;
-}
 
 function EvoBadge({ value, suffix }: { value: number; suffix?: string }) {
   if (value === 0) return <span className="text-xs text-gray-400">—</span>;
@@ -124,13 +116,17 @@ function ContactTooltip({ prospect }: { prospect: Prospect }) {
           className="absolute left-0 top-full z-30 mt-1 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg whitespace-nowrap"
           onClick={(e) => e.stopPropagation()}
         >
-          <p
-            className="cursor-pointer text-xs text-gray-600 hover:text-blue-500"
-            onClick={() => navigator.clipboard.writeText(prospect.email)}
-            title="Cliquer pour copier"
-          >
-            {prospect.email}
-          </p>
+          {prospect.email ? (
+            <p
+              className="cursor-pointer text-xs text-gray-600 hover:text-blue-500"
+              onClick={() => navigator.clipboard.writeText(prospect.email!)}
+              title="Cliquer pour copier"
+            >
+              {prospect.email}
+            </p>
+          ) : (
+            <p className="text-xs text-gray-400 italic">Pas d&apos;email</p>
+          )}
           {prospect.telephone && (
             <p
               className="cursor-pointer text-xs text-gray-600 hover:text-blue-500"
@@ -162,11 +158,18 @@ function PipelineCard({
   const latest = sorted[sorted.length - 1] ?? null;
 
   const isHitl = row.lead.status === "Renvoyé au commercial" || row.lead.status === "Erreur distance";
-  const isUrgent = (() => {
-    if (!row.lead.departDate) return false;
-    const jours = Math.ceil((new Date(row.lead.departDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    return jours >= 0 && jours <= 7;
-  })();
+  const [{ isUrgent, isDepasse }] = useState(() => {
+    if (!row.lead.departDate) return { isUrgent: false, isDepasse: false };
+    const full = new Date(row.lead.departDate);
+    if (row.lead.departHeure) {
+      const [h, m] = row.lead.departHeure.split(":").map(Number);
+      full.setHours(h, m, 0, 0);
+    }
+    const now = Date.now();
+    if (full.getTime() < now) return { isUrgent: false, isDepasse: true };
+    const jours = Math.ceil((full.getTime() - now) / (1000 * 60 * 60 * 24));
+    return { isUrgent: jours <= 7, isDepasse: false };
+  });
 
   function handleClick() {
     if (validDevis.length === 0) {
@@ -179,49 +182,47 @@ function PipelineCard({
   return (
     <div
       onClick={handleClick}
-      className={`relative cursor-pointer rounded-xl border bg-white p-3 shadow-sm transition-all hover:shadow-md ${isHitl ? "border-orange-200 bg-orange-50" : "border-gray-100 hover:border-gray-200"}`}
+      className={`relative cursor-pointer rounded-xl border p-4 shadow-sm transition-all hover:shadow-md ${isDepasse ? "border-gray-200 bg-gray-100 opacity-60" : isHitl ? "border-orange-200 bg-orange-50" : "border-gray-100 bg-white hover:border-gray-200"}`}
     >
+      {isDepasse && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+          <span className="-rotate-30 text-3xl font-black uppercase tracking-widest text-gray-500">
+            Dépassé
+          </span>
+        </div>
+      )}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-gray-900">
+          <p className="truncate text-base font-semibold text-gray-900">
             {row.prospect.societe || "—"}
           </p>
           <ContactTooltip prospect={row.prospect} />
         </div>
         {latest && (
-          <span className={`shrink-0 text-sm font-bold ${columnKey === "GAGNÉ" ? "text-green-600" : "text-gray-900"}`}>
+          <span className={`shrink-0 text-base font-bold ${columnKey === "GAGNÉ" ? "text-green-600" : "text-gray-900"}`}>
             {Math.round(parseFloat(latest.prixTTC))} €
           </span>
         )}
       </div>
 
-      <p className="mt-1.5 text-xs text-blue-500">
-        {row.lead.departVille} → {row.lead.arriveeVille}
-        {(row.lead.voyageursMax ?? row.lead.voyageursMin)
-          ? ` · ${row.lead.voyageursMax ?? row.lead.voyageursMin} pax`
-          : ""}
-      </p>
-
       {row.lead.departDate && (
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-2 text-sm text-gray-500">
           Départ: {new Date(row.lead.departDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
-          {row.lead.departHeure ? ` à ${row.lead.departHeure.replace(":", "h")}` : ""}
+          {row.lead.departHeure ? ` à ${row.lead.departHeure.slice(0, 5).replace(":", "h")}` : ""}
         </p>
       )}
 
-      <p className="mt-1 text-xs text-gray-400">{timeAgo(row.lead.createdAt)}</p>
-
-      <div className="mt-2 flex flex-wrap gap-1">
+      <div className="mt-2.5 flex flex-wrap gap-1.5">
         {isUrgent && (
-          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">Urgent</span>
+          <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-600">Urgent -7j</span>
         )}
         {row.nbRelances > 0 && (
-          <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">
+          <span className="rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-medium text-yellow-700">
             Relancé ({row.nbRelances}x)
           </span>
         )}
         {validDevis.length > 1 && (
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+          <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
             {validDevis.length} devis
           </span>
         )}
@@ -239,6 +240,7 @@ export default function PipelineBoard({
   stats: KanbanStats;
 }) {
   const router = useRouter();
+  const [now] = useState(() => Date.now());
   const [search, setSearch] = useState("");
   const [createForLead, setCreateForLead] = useState<{ id: string; lead: Lead; prospect: Prospect } | null>(null);
 
@@ -349,6 +351,17 @@ export default function PipelineBoard({
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 px-4 py-4 sm:grid-cols-3 md:px-6 lg:grid-cols-6">
+        {/* Traitement manuel */}
+        <div className={`rounded-xl border p-4 shadow-sm ${stats.enAttenteHitl > 0 ? "border-orange-200 bg-orange-50" : "border-gray-100 bg-white"}`}>
+          <p className="text-xs font-medium text-gray-400">Traitement manuel</p>
+          <div className="mt-1 flex items-end justify-between">
+            <p className={`text-3xl font-bold ${stats.enAttenteHitl > 0 ? "text-orange-500" : "text-gray-900"}`}>
+              {stats.enAttenteHitl}
+            </p>
+            <p className="text-xs text-gray-400">à traiter</p>
+          </div>
+        </div>
+
         {/* Leads */}
         <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
           <p className="text-xs font-medium text-gray-400">Leads aujourd&apos;hui</p>
@@ -393,17 +406,6 @@ export default function PipelineBoard({
           </div>
         </div>
 
-        {/* HITL */}
-        <div className={`rounded-xl border p-4 shadow-sm ${stats.enAttenteHitl > 0 ? "border-orange-200 bg-orange-50" : "border-gray-100 bg-white"}`}>
-          <p className="text-xs font-medium text-gray-400">En attente HITL</p>
-          <div className="mt-1 flex items-end justify-between">
-            <p className={`text-3xl font-bold ${stats.enAttenteHitl > 0 ? "text-orange-500" : "text-gray-900"}`}>
-              {stats.enAttenteHitl}
-            </p>
-            <p className="text-xs text-gray-400">à traiter</p>
-          </div>
-        </div>
-
         {/* Pie chart — répartition */}
         <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
           <p className="mb-1 text-xs font-medium text-gray-400">Répartition</p>
@@ -445,13 +447,30 @@ export default function PipelineBoard({
       {/* Kanban */}
       <div className="flex flex-1 gap-3 overflow-x-auto px-4 pb-4 md:gap-4 md:px-6 md:pb-6">
         {COLUMN_CONFIG.map((col) => {
+          function getDepartMs(lead: Lead): number {
+            if (!lead.departDate) return Infinity;
+            const d = new Date(lead.departDate);
+            if (lead.departHeure) {
+              const [h, m] = lead.departHeure.split(":").map(Number);
+              d.setHours(h, m, 0, 0);
+            }
+            return d.getTime();
+          }
           const rows = columns[col.key].filter(filterRow).sort((a, b) => {
-            const aUrgent = a.lead.departDate && Math.ceil((new Date(a.lead.departDate).getTime() - Date.now()) / 86400000) <= 7 ? 1 : 0;
-            const bUrgent = b.lead.departDate && Math.ceil((new Date(b.lead.departDate).getTime() - Date.now()) / 86400000) <= 7 ? 1 : 0;
-            return bUrgent - aUrgent;
+            const aMs = getDepartMs(a.lead);
+            const bMs = getDepartMs(b.lead);
+            const aDepasse = aMs < now ? 1 : 0;
+            const bDepasse = bMs < now ? 1 : 0;
+            if (aDepasse !== bDepasse) return aDepasse - bDepasse;
+            const aJours = Math.ceil((aMs - now) / 86400000);
+            const bJours = Math.ceil((bMs - now) / 86400000);
+            const aUrgent = aJours >= 0 && aJours <= 7 ? 1 : 0;
+            const bUrgent = bJours >= 0 && bJours <= 7 ? 1 : 0;
+            if (aUrgent !== bUrgent) return bUrgent - aUrgent;
+            return aMs - bMs;
           });
           return (
-            <div key={col.key} className="flex w-[220px] shrink-0 flex-col sm:w-[260px]">
+            <div key={col.key} className="flex w-[260px] shrink-0 flex-col sm:w-[300px]">
               <div className="mb-3 flex items-center gap-2">
                 <span className={`h-2 w-2 rounded-full ${col.dot}`} />
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-500">

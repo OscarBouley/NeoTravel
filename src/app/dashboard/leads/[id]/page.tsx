@@ -128,7 +128,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               <p className="mb-3 text-xs font-bold uppercase tracking-widest text-gray-400">Demande</p>
               <div className="rounded-xl border border-gray-100 divide-y divide-gray-50">
                 <InfoRow label="Prospect" value={`${prospect.prenom ?? ""} ${prospect.nom ?? ""}`.trim()} />
-                <InfoRow label="Email" value={prospect.email} />
+                <InfoRow label="Email" value={prospect.email ?? "—"} />
                 <InfoRow label="Tél" value={prospect.telephone ? `${prospect.telephone.slice(0, 2)}····${prospect.telephone.slice(-2)}` : "—"} />
                 <InfoRow label="Passagers" value={pax?.toString() ?? "—"} />
                 <InfoRow

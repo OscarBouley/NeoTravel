@@ -9,8 +9,8 @@ Prototype d'automatisation du cycle commercial de NeoTravel — PME de transport
 ## Fonctionnalités
 
 ### Pour le prospect (page d'accueil)
-- **Chatbot IA** : assistant conversationnel qui collecte progressivement les infos du trajet puis les coordonnées, qualifie la demande, et génère automatiquement un devis
-- **Formulaire classique** : alternative au chat pour les prospects qui préfèrent un formulaire structuré
+- **Chatbot IA** : assistant conversationnel qui collecte progressivement les infos du trajet puis les coordonnées, qualifie la demande, et génère automatiquement un devis (streaming fluide avec `smoothStream` + typewriter côté client)
+- **Email et téléphone optionnels (RGPD)** : l'IA crée le devis sans email ni téléphone, puis propose au prospect de les laisser volontairement après réception du tarif (outil `mettre_a_jour_contact`)
 - **Email avec devis PDF** : le prospect reçoit son devis en pièce jointe avec boutons Accepter / Décliner
 
 ### Pour le commercial (dashboard)
@@ -23,7 +23,7 @@ Prototype d'automatisation du cycle commercial de NeoTravel — PME de transport
 - **Relances automatiques** : 2 emails de relance max — J+3/J+7 (normal) ou J+1/J+2 (urgent si prestation ≤7 jours), pas de relance si date dépassée
 - **Déclenchement manuel des relances** : endpoint POST pour déclencher les relances pendant une démo
 - **Validation humaine** : le commercial review et envoie le devis — pas d'envoi automatique
-- **Escalade HITL** : >85 passagers ou cas complexe (circuit multi-étapes, PMR, international...) → renvoi au commercial
+- **Escalade HITL** : >85 passagers ou cas complexe (circuit multi-étapes, PMR, international...) → renvoi au commercial avec `detailComplexe` décrivant la raison (visible dans le dashboard)
 - **Alerte** : bandeau d'alerte pour les demandes "À traiter" ET "Erreur distance"
 - **Logging** : traçabilité complète (IA + commerciaux) dans `LOGS/` par jour
 
@@ -75,8 +75,11 @@ Remplir `.env.local` avec les valeurs suivantes :
 | `AI_GATEWAY_API_KEY` | Clé Vercel AI Gateway | [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) |
 | `GMAIL_USER` | Adresse Gmail pour l'envoi des emails | — |
 | `GMAIL_APP_PASSWORD` | Mot de passe d'application Gmail | [Google Account → Security → App Passwords](https://myaccount.google.com/apppasswords) |
+| `ORS_API_KEY` | Clé OpenRouteService (calcul de distance) | [openrouteservice.org](https://openrouteservice.org/) |
 | `CRON_SECRET` | Secret pour protéger l'endpoint cron | Valeur libre |
 | `NEXT_PUBLIC_BASE_URL` | URL publique du site (pour les liens dans les emails) | `http://localhost:3000` en dev |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL publique Supabase (optionnel, usage futur) | Supabase → Project Settings |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Clé publique Supabase (optionnel, usage futur) | Supabase → Project Settings → API |
 
 ### Migrations
 
@@ -115,7 +118,7 @@ src/
 │   │   └── decliner/page.tsx               # Page publique de déclin du devis
 │   └── api/
 │       ├── health/route.ts                 # Health-check (SELECT 1)
-│       ├── chat/route.ts                   # Chat IA (streamText + tool creer_devis)
+│       ├── chat/route.ts                   # Chat IA (streamText + smoothStream + tools creer_devis & mettre_a_jour_contact)
 │       ├── leads/
 │       │   ├── route.ts                    # GET liste leads | POST créer lead (formulaire)
 │       │   └── [id]/
@@ -128,14 +131,14 @@ src/
 │       │   ├── route.ts                    # DELETE supprimer un devis (si non envoyé)
 │       │   ├── pdf/route.ts                # GET générer et retourner le PDF
 │       │   ├── envoyer/route.ts            # POST envoyer le devis par email
+│       │   ├── contact/route.ts            # GET infos contact du prospect lié au devis
 │       │   └── repondre/route.ts           # POST accepter/décliner (boutons email)
 │       └── cron/
 │           └── relances/route.ts           # GET (cron Vercel) + POST (déclenchement manuel)
 │
 ├── components/
-│   ├── chat-devis.tsx                      # Composant chat IA (useChat + streaming)
+│   ├── chat-devis.tsx                      # Composant chat IA (useChat + streaming fluide typewriter)
 │   ├── chat-placeholder.tsx                # Chips de suggestion initiales
-│   ├── devis-form.tsx                      # Formulaire de devis classique
 │   ├── reponse-devis.tsx                   # Page de réponse prospect (accepter/décliner)
 │   └── dashboard/
 │       ├── pipeline-board.tsx              # Pipeline Kanban (7 colonnes, KPIs, responsive)
@@ -185,7 +188,7 @@ prospects  1───∞  leads  1───∞  devis
 ```
 
 - **prospects** : coordonnées client (email unique), upsert à chaque nouvelle demande
-- **leads** : demande de transport (trajet, dates, voyageurs, statut, note commerciale)
+- **leads** : demande de transport (trajet, dates, voyageurs, statut, note commerciale, détail complexe)
 - **devis** : version chiffrée d'un lead (prix, coefficients, distance, référence, date d'envoi)
 - **relances** : trace de chaque email de relance envoyé
 
@@ -212,14 +215,14 @@ Tous les coefficients sont dans [`src/lib/business/tarifs.ts`](src/lib/business/
 
 ## Prompt système de l'agent IA
 
-L'agent IA (`src/app/api/chat/route.ts`) est configuré avec Claude Sonnet 4 (temperature 0.3) et un unique outil `creer_devis`. Son comportement :
+L'agent IA (`src/app/api/chat/route.ts`) est configuré avec Claude Sonnet 4 (temperature 0.3) et deux outils : `creer_devis` et `mettre_a_jour_contact`. Son comportement :
 
-1. **Collecte en 2 étapes strictes** : d'abord le trajet (type, villes, dates, heures, passagers), puis les coordonnées (nom, prénom, email, téléphone, société)
+1. **Collecte en 2 étapes strictes** : d'abord le trajet (type, villes, dates, heures, passagers), puis les coordonnées (nom, prénom, société — email et téléphone ne sont PAS demandés, RGPD)
 2. **Récapitulatif + confirmation** avant appel de l'outil
 3. **Jamais de prix** pendant la collecte — le prix est calculé par `calculerDevis()` uniquement
-4. **Cas complexes** : circuits multi-étapes, PMR, international, multi-jours → création partielle et renvoi au commercial
+4. **Cas complexes** : circuits multi-étapes, PMR, international, multi-jours → création partielle, renvoi au commercial avec `detail_complexe` décrivant la raison
 5. **Style** : texte simple (pas de markdown), concis, professionnel, chaleureux, émojis rares
-6. **Après création** : communique le TTC et précise qu'un conseiller va relire et envoyer le devis par email
+6. **Après création** : communique le TTC puis propose de laisser un email/téléphone volontairement (enregistré via `mettre_a_jour_contact`)
 
 ---
 
@@ -235,12 +238,13 @@ L'agent IA (`src/app/api/chat/route.ts`) est configuré avec Claude Sonnet 4 (te
 | `npm run db:studio` | Interface web Drizzle Studio |
 | `npm run test` | Lance les tests unitaires (Vitest) |
 | `npm run test:watch` | Tests en mode watch |
+| `npm run db:seed` | Injecte des données de test dans la base |
 
 ---
 
 ## Tests
 
-Tests unitaires sur `calculerDevis()` avec Vitest (39 tests) couvrant :
+Tests unitaires sur `calculerDevis()` avec Vitest (40 tests) couvrant :
 - **Grille tarifaire** : chaque palier de distance, bascule au-delà de 180 km
 - **Multiplicateur** : aller simple (×1), aller-retour (×2), circuit (×1)
 - **Saisonnalité** : chaque mois de l'année (-7% à +15%)

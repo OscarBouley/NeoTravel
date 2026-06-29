@@ -261,7 +261,7 @@ export default function DevisCreate({ leadId, lead, prospect, onClose }: DevisCr
                 <p className="mb-2 text-xs font-semibold text-gray-500">Client</p>
                 <div className="space-y-1.5">
                   <InfoLine label="Nom" value={`${prospect.prenom ?? ""} ${prospect.nom ?? ""}`.trim() || "—"} />
-                  <InfoLine label="Email" value={prospect.email} />
+                  <InfoLine label="Email" value={prospect.email ?? "—"} />
                   {prospect.telephone && <InfoLine label="Tél" value={prospect.telephone} />}
                   {prospect.societe && <InfoLine label="Société" value={prospect.societe} />}
                 </div>
@@ -280,12 +280,22 @@ export default function DevisCreate({ leadId, lead, prospect, onClose }: DevisCr
                     value={lead.departDate ? `${formatDate(lead.departDate)}${lead.departHeure ? ` à ${lead.departHeure}` : ""}` : "—"}
                   />
                   <InfoLine
-                    label="Date retour"
-                    value={lead.arriveeDate ? `${formatDate(lead.arriveeDate)}${lead.arriveeHeure ? ` à ${lead.arriveeHeure}` : ""}` : "—"}
+                    label="Retour estimé"
+                    value={lead.arriveeDate ? `${formatDate(lead.arriveeDate)}${lead.arriveeHeure ? ` à ~${lead.arriveeHeure}` : ""}` : "—"}
                   />
                   <InfoLine label="Passagers" value={pax ? `${pax} pax` : "—"} />
                 </div>
               </section>
+
+              {lead.detailComplexe && (
+                <>
+                  <div className="border-t border-gray-200" />
+                  <section>
+                    <p className="mb-2 text-xs font-semibold text-amber-600">Cas complexe</p>
+                    <p className="text-xs leading-relaxed text-gray-700">{lead.detailComplexe}</p>
+                  </section>
+                </>
+              )}
             </div>
           </div>
         )}

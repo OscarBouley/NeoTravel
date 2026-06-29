@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 interface DevisData {
@@ -29,12 +29,13 @@ interface LeadInfo {
   besoin: string | null;
   voyageursMin: number | null;
   voyageursMax: number | null;
+  detailComplexe: string | null;
 }
 
 interface ProspectInfo {
   nom: string | null;
   prenom: string | null;
-  email: string;
+  email: string | null;
   telephone: string | null;
   societe: string | null;
 }
@@ -147,7 +148,6 @@ export default function DevisPreview({
     departDate: leadInfo?.departDate ?? "",
     departHeure: leadInfo?.departHeure ?? "",
     arriveeDate: leadInfo?.arriveeDate ?? "",
-    arriveeHeure: leadInfo?.arriveeHeure ?? "",
     besoin: leadInfo?.besoin ?? "aller_simple",
     voyageursMin: leadInfo?.voyageursMin ?? 0,
     voyageursMax: leadInfo?.voyageursMax ?? 0,
@@ -192,6 +192,51 @@ export default function DevisPreview({
   useEffect(() => {
     onPriceChange?.(prixHT, prixTTC);
   }, [prixHT, prixTTC, onPriceChange]);
+
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialRender = useRef(true);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+
+  const pendingSave = useRef<(() => void) | null>(null);
+
+  const autoSave = useCallback(() => {
+    if (fieldsLocked) return;
+    const ajustement = customMode === "pct" && customValue ? -(Math.abs(customValue) / 100) : 0;
+    pendingSave.current = null;
+    setAutoSaveStatus("saving");
+    fetch(`/api/devis/${currentDevisId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        coeffSaison,
+        coeffDate,
+        coeffCapacite,
+        marge,
+        ajustementCustom: ajustement,
+        prixHT: prixHT.toFixed(2),
+        prixTTC: prixTTC.toFixed(2),
+      }),
+    }).then(() => {
+      setAutoSaveStatus("saved");
+      setTimeout(() => setAutoSaveStatus("idle"), 1500);
+    }).catch(() => setAutoSaveStatus("idle"));
+  }, [currentDevisId, coeffSaison, coeffDate, coeffCapacite, marge, customValue, customMode, prixHT, prixTTC, fieldsLocked]);
+
+  useEffect(() => {
+    if (initialRender.current) {
+      initialRender.current = false;
+      return;
+    }
+    if (fieldsLocked) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    pendingSave.current = autoSave;
+    autoSaveTimer.current = setTimeout(autoSave, 500);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [coeffSaison, coeffDate, coeffCapacite, marge, customValue, customMode, autoSave, fieldsLocked]);
+
+  useEffect(() => {
+    return () => { pendingSave.current?.(); };
+  }, []);
 
   async function handleCreerNouveau() {
     setSaving(true);
@@ -247,7 +292,6 @@ export default function DevisPreview({
           departDate: editLead.departDate || null,
           departHeure: editLead.departHeure || null,
           arriveeDate: editLead.arriveeDate || null,
-          arriveeHeure: editLead.arriveeHeure || null,
           besoin: editLead.besoin,
           voyageursMin: editLead.voyageursMin || null,
           voyageursMax: editLead.voyageursMax || null,
@@ -295,9 +339,16 @@ export default function DevisPreview({
 
   const simulator = (
     <div className="p-5">
-      <h2 className={`text-sm font-semibold ${txtValue}`}>
-        Devis N°{currentVersion} — {devisData.reference}
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className={`text-sm font-semibold ${txtValue}`}>
+          Devis N°{currentVersion} — {devisData.reference}
+        </h2>
+        {autoSaveStatus !== "idle" && (
+          <span className={`text-[10px] ${autoSaveStatus === "saving" ? "text-gray-400" : "text-green-500"}`}>
+            {autoSaveStatus === "saving" ? "Sauvegarde..." : "Sauvegardé"}
+          </span>
+        )}
+      </div>
 
       {/* Status badges */}
       <div className="mb-4 mt-2 flex flex-wrap gap-2">
@@ -381,14 +432,10 @@ export default function DevisPreview({
                       <input type="time" value={editLead.departHeure} onChange={(e) => setEditLead({ ...editLead, departHeure: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
                     </div>
                   </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div className="mt-2">
                     <div>
                       <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Date retour</label>
                       <input type="date" value={editLead.arriveeDate} onChange={(e) => setEditLead({ ...editLead, arriveeDate: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
-                    </div>
-                    <div>
-                      <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Heure retour</label>
-                      <input type="time" value={editLead.arriveeHeure} onChange={(e) => setEditLead({ ...editLead, arriveeHeure: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
                     </div>
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-2">
@@ -416,12 +463,20 @@ export default function DevisPreview({
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => setEditingInfo(true)}
-              className={`mb-4 w-full rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${isEmbedded ? "border-gray-200 text-gray-600 hover:bg-gray-50" : "border-navy-700 text-navy-300 hover:bg-navy-800"}`}
-            >
-              Modifier les infos client & voyage
-            </button>
+            <>
+              {leadInfo?.detailComplexe && (
+                <div className={`mb-3 rounded-lg p-3 ${isEmbedded ? "bg-amber-50 border border-amber-100" : "bg-amber-400/10"}`}>
+                  <p className="mb-1 text-[10px] font-semibold text-amber-600">Cas complexe</p>
+                  <p className={`text-xs leading-relaxed ${isEmbedded ? "text-amber-800" : "text-amber-300"}`}>{leadInfo.detailComplexe}</p>
+                </div>
+              )}
+              <button
+                onClick={() => setEditingInfo(true)}
+                className={`mb-4 w-full rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${isEmbedded ? "border-gray-200 text-gray-600 hover:bg-gray-50" : "border-navy-700 text-navy-300 hover:bg-navy-800"}`}
+              >
+                Modifier les infos client & voyage
+              </button>
+            </>
           )}
         </>
       )}

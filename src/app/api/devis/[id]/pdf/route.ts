@@ -44,7 +44,7 @@ export async function GET(
           prospect: {
             nom: prospect.nom ?? "",
             prenom: prospect.prenom ?? "",
-            email: prospect.email,
+            email: prospect.email ?? "",
             telephone: prospect.telephone ?? "",
             societe: prospect.societe ?? "",
           },
