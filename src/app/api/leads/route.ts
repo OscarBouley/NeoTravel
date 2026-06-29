@@ -4,6 +4,7 @@ import { leads, prospects, devis } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { calculerDistanceKm } from "@/lib/geo/distance";
 import { calculerDevis } from "@/lib/business/calculer-devis";
+import { validerDemande } from "@/lib/business/validation";
 
 function calculerHeureArrivee(heureDepart: string, distanceKm: number): string {
   const [h, m] = heureDepart.split(":").map(Number);
@@ -59,6 +60,21 @@ export async function POST(request: NextRequest) {
     if (!nom || !besoin || !departVille || !arriveeVille) {
       return NextResponse.json(
         { error: "Champs obligatoires manquants" },
+        { status: 400 },
+      );
+    }
+
+    const check = validerDemande({
+      departDate: departDate || null,
+      arriveeDate: arriveeDate || null,
+      departVille,
+      arriveeVille,
+      voyageursMin: voyageursMin ? Number(voyageursMin) : null,
+      voyageursMax: voyageursMax ? Number(voyageursMax) : null,
+    });
+    if (!check.valid) {
+      return NextResponse.json(
+        { error: check.errors.join(". ") },
         { status: 400 },
       );
     }

@@ -7,6 +7,7 @@ import { leads, prospects, devis } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { calculerDistanceKm } from "@/lib/geo/distance";
 import { calculerDevis } from "@/lib/business/calculer-devis";
+import { validerDemande } from "@/lib/business/validation";
 import { logger } from "@/lib/logger";
 
 const SYSTEM_PROMPT = `Tu es l'assistant commercial de NeoTravel, spécialiste du transport de groupe (bus, autocar, minibus avec chauffeur).
@@ -123,6 +124,18 @@ function calculerHeureArrivee(heureDepart: string, distanceKm: number): string {
 }
 
 async function executeCreerDevis(params: DevisInput) {
+  const check = validerDemande({
+    departDate: params.depart_date,
+    arriveeDate: params.arrivee_date,
+    departVille: params.depart_ville,
+    arriveeVille: params.arrivee_ville,
+    voyageursMin: params.voyageurs_min,
+    voyageursMax: params.voyageurs_max,
+  });
+  if (!check.valid) {
+    return { success: false, message: check.errors.join(". ") };
+  }
+
   logger.ia("DÉBUT CRÉATION DEVIS", `prospect: ${params.prenom} ${params.nom}`);
 
   // 1. Créer le prospect
