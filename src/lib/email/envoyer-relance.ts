@@ -21,7 +21,7 @@ const SUJETS: Record<number, string> = {
 
 function getCorps(data: RelanceData): string {
   const accepterUrl = `${BASE_URL}/devis/${data.devisId}/accepter`;
-  const declinerUrl = `${BASE_URL}/devis/${data.devisId}/decliner`;
+  const contactUrl = `${BASE_URL}/devis/${data.devisId}/contact`;
   const prix = Math.round(parseFloat(data.prixTTC));
 
   if (data.numero === 1) {
@@ -58,7 +58,7 @@ function getCorps(data: RelanceData): string {
 
 export async function envoyerRelance(data: RelanceData) {
   const accepterUrl = `${BASE_URL}/devis/${data.devisId}/accepter`;
-  const declinerUrl = `${BASE_URL}/devis/${data.devisId}/decliner`;
+  const contactUrl = `${BASE_URL}/devis/${data.devisId}/contact`;
 
   await transporter.sendMail({
     from: `"NeoTravel" <${process.env.GMAIL_USER}>`,
@@ -76,10 +76,10 @@ export async function envoyerRelance(data: RelanceData) {
                     text-decoration: none; font-weight: bold; font-size: 15px; border-radius: 8px; margin-right: 12px;">
             Accepter le devis
           </a>
-          <a href="${declinerUrl}"
+          <a href="${contactUrl}"
              style="display: inline-block; padding: 14px 32px; background-color: #e5e7eb; color: #374151;
                     text-decoration: none; font-weight: bold; font-size: 15px; border-radius: 8px;">
-            Décliner le devis
+            Obtenir plus d&apos;informations
           </a>
         </div>
 

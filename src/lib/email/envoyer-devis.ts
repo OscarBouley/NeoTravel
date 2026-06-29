@@ -14,7 +14,7 @@ export async function envoyerDevis(
   );
 
   const accepterUrl = `${BASE_URL}/devis/${data.devisId}/accepter`;
-  const declinerUrl = `${BASE_URL}/devis/${data.devisId}/decliner`;
+  const contactUrl = `${BASE_URL}/devis/${data.devisId}/contact`;
 
   const subject = data.isRevision
     ? `Nouveau devis NeoTravel — ${data.reference}`
@@ -50,10 +50,10 @@ export async function envoyerDevis(
                     text-decoration: none; font-weight: bold; font-size: 15px; border-radius: 8px; margin-right: 12px;">
             Accepter le devis
           </a>
-          <a href="${declinerUrl}"
+          <a href="${contactUrl}"
              style="display: inline-block; padding: 14px 32px; background-color: #e5e7eb; color: #374151;
                     text-decoration: none; font-weight: bold; font-size: 15px; border-radius: 8px;">
-            Décliner le devis
+            Obtenir plus d&apos;informations
           </a>
         </div>
 
