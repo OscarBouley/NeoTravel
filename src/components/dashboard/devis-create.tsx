@@ -286,6 +286,16 @@ export default function DevisCreate({ leadId, lead, prospect, onClose }: DevisCr
                   <InfoLine label="Passagers" value={pax ? `${pax} pax` : "—"} />
                 </div>
               </section>
+
+              {lead.detailComplexe && (
+                <>
+                  <div className="border-t border-gray-200" />
+                  <section>
+                    <p className="mb-2 text-xs font-semibold text-amber-600">Cas complexe</p>
+                    <p className="text-xs leading-relaxed text-gray-700">{lead.detailComplexe}</p>
+                  </section>
+                </>
+              )}
             </div>
           </div>
         )}

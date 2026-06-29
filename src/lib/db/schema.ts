@@ -58,6 +58,7 @@ export const leads = pgTable("leads", {
   voyageursMax: integer("voyageurs_max"),
 
   noteCommercial: varchar("note_commercial", { length: 500 }),
+  detailComplexe: varchar("detail_complexe", { length: 1000 }),
 });
 
 export const devis = pgTable("devis", {

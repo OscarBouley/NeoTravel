@@ -29,6 +29,7 @@ interface LeadInfo {
   besoin: string | null;
   voyageursMin: number | null;
   voyageursMax: number | null;
+  detailComplexe: string | null;
 }
 
 interface ProspectInfo {
@@ -410,12 +411,20 @@ export default function DevisPreview({
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => setEditingInfo(true)}
-              className={`mb-4 w-full rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${isEmbedded ? "border-gray-200 text-gray-600 hover:bg-gray-50" : "border-navy-700 text-navy-300 hover:bg-navy-800"}`}
-            >
-              Modifier les infos client & voyage
-            </button>
+            <>
+              {leadInfo?.detailComplexe && (
+                <div className={`mb-3 rounded-lg p-3 ${isEmbedded ? "bg-amber-50 border border-amber-100" : "bg-amber-400/10"}`}>
+                  <p className="mb-1 text-[10px] font-semibold text-amber-600">Cas complexe</p>
+                  <p className={`text-xs leading-relaxed ${isEmbedded ? "text-amber-800" : "text-amber-300"}`}>{leadInfo.detailComplexe}</p>
+                </div>
+              )}
+              <button
+                onClick={() => setEditingInfo(true)}
+                className={`mb-4 w-full rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${isEmbedded ? "border-gray-200 text-gray-600 hover:bg-gray-50" : "border-navy-700 text-navy-300 hover:bg-navy-800"}`}
+              >
+                Modifier les infos client & voyage
+              </button>
+            </>
           )}
         </>
       )}

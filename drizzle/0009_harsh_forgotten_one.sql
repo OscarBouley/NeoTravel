@@ -1,0 +1,1 @@
+ALTER TABLE "leads" ADD COLUMN "detail_complexe" varchar(1000);

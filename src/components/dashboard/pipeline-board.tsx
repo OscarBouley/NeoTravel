@@ -35,6 +35,7 @@ export interface Lead {
   voyageursMin: number | null;
   voyageursMax: number | null;
   noteCommercial: string | null;
+  detailComplexe: string | null;
 }
 
 export interface Devis {

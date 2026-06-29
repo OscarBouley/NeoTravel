@@ -1,4 +1,4 @@
-import { streamText, stepCountIs, convertToModelMessages } from "ai";
+import { streamText, smoothStream, stepCountIs, convertToModelMessages } from "ai";
 import { tool } from "@ai-sdk/provider-utils";
 import { gateway } from "@ai-sdk/gateway";
 import { z } from "zod";
@@ -18,6 +18,7 @@ TON RÔLE :
 
 ORDRE DE COLLECTE STRICT :
 D'abord les infos du trajet (étape 1), puis les infos personnelles (étape 2).
+Pour chaque étape essaye de dire tout ce dont tu as besoin en un seul message.
 
 ÉTAPE 1 — TRAJET (collecter tout avant de passer à l'étape 2) :
 - Type de déplacement : aller simple, aller-retour ou circuit
@@ -46,7 +47,7 @@ AVANT D'APPELER L'OUTIL creer_devis :
 - Vérifie que les infos trajet + nom, prénom et société sont renseignés
 - Si un champ obligatoire manque, demande-le explicitement
 - Fais un récapitulatif complet et demande confirmation
-- N'appelle l'outil qu'après confirmation du prospect
+- N'appelle l'outil qu'après confirmation du prospect de ton résumé des infos
 
 RÈGLES DE STYLE :
 - N'utilise JAMAIS de markdown : pas de gras (**), pas d'italique (*), pas de titres (#), pas de listes avec tirets ou puces
@@ -72,9 +73,10 @@ Les cas complexes sont :
 - Trajet international ou vers des zones non desservies par le réseau routier standard
 - Demande pour une prestation sur plusieurs jours avec hébergement
 - Tout cas où tu n'es pas sûr de pouvoir qualifier correctement la demande
+- Tout cas où la demande mentionne clairement être complexe ou nécessiter un traitement humain
 
 Pour ces cas (hors >85 pax qui est automatique), explique au prospect :
-"Votre demande nécessite une attention particulière. Je vais enregistrer toutes les informations que vous m'avez transmises et un conseiller commercial spécialisé reprendra contact avec vous sous 2 heures pour vous proposer une offre adaptée."
+"Votre demande nécessite une attention particulière. Je vais enregistrer toutes les informations que vous m'avez transmises et un conseiller commercial reprendra contact avec vous sous 2 heures pour vous proposer une offre adaptée."
 Puis appelle l'outil avec le champ complexe à true pour signaler le cas.`;
 
 const devisSchema = z.object({
@@ -103,6 +105,10 @@ const devisSchema = z.object({
     .boolean()
     .optional()
     .describe("Mettre à true si le cas est complexe (circuit multi-étapes, besoins spéciaux PMR, international, multi-jours, etc.). Les >85 pax sont gérés automatiquement."),
+  detail_complexe: z
+    .string()
+    .optional()
+    .describe("Si complexe est true, décris en une ou deux phrases ce qui rend la demande complexe (ex: 'PMR nécessitant un véhicule adapté', 'Circuit 5 étapes sur 3 jours avec hébergement'). Obligatoire si complexe est true."),
 });
 
 type DevisInput = z.infer<typeof devisSchema>;
@@ -142,6 +148,7 @@ async function executeCreerDevis(params: DevisInput) {
       besoin: params.besoin,
       voyageursMin: params.voyageurs_min,
       voyageursMax: params.voyageurs_max,
+      detailComplexe: params.detail_complexe ?? null,
     })
     .returning({ id: leads.id });
   logger.ia("Lead créé", `id: ${lead.id.slice(0, 8)}, trajet: ${params.depart_ville} → ${params.arrivee_ville}`);
@@ -186,13 +193,19 @@ async function executeCreerDevis(params: DevisInput) {
   if (result.detail.renvoyerCommercial || params.complexe) {
     const raison = result.detail.renvoyerCommercial ? ">85 passagers" : "cas complexe signalé par l'IA";
     logger.ia("Renvoi au commercial", `lead: ${lead.id.slice(0, 8)}, raison: ${raison}`);
+    const detailAuto = result.detail.renvoyerCommercial
+      ? `Plus de 85 passagers (${nbPassagers} pax demandés)`
+      : params.detail_complexe;
     await db
       .update(leads)
-      .set({ status: "Renvoyé au commercial" })
+      .set({
+        status: "Renvoyé au commercial",
+        ...(detailAuto && { detailComplexe: detailAuto }),
+      })
       .where(eq(leads.id, lead.id));
     const msgClient = result.detail.renvoyerCommercial
       ? `Demande enregistrée (réf: ${lead.id.slice(0, 8)}). Votre groupe dépasse 85 personnes, un conseiller spécialisé vous recontactera sous 2h avec une offre sur mesure.`
-      : `Demande enregistrée (réf: ${lead.id.slice(0, 8)}). Votre demande nécessite une attention particulière, un conseiller commercial spécialisé reprendra contact avec vous sous 2 heures pour vous proposer une offre adaptée.`;
+      : `Demande enregistrée (réf: ${lead.id.slice(0, 8)}). Votre demande nécessite une attention particulière, un conseiller commercial spécialisé reprendra contact avec vous sous très prochainement pour vous proposer une offre adaptée.`;
     return {
       success: true,
       leadId: lead.id,
@@ -294,6 +307,7 @@ export async function POST(req: Request) {
         execute: executeMettreAJourContact,
       }),
     },
+    experimental_transform: smoothStream({ chunking: "word" }),
     stopWhen: stepCountIs(5),
     onError({ error }) {
       console.error("streamText error:", error);

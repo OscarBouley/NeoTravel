@@ -11,6 +11,51 @@ function getTextContent(message: UIMessage): string {
     .join("");
 }
 
+function useSmoothText(targetText: string, isStreaming: boolean): string {
+  const [displayed, setDisplayed] = useState(targetText);
+  const targetRef = useRef(targetText);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    targetRef.current = targetText;
+  }, [targetText]);
+
+  useEffect(() => {
+    if (!isStreaming) {
+      cancelAnimationFrame(rafRef.current);
+      setDisplayed(targetRef.current);
+      return;
+    }
+
+    function tick() {
+      setDisplayed((prev) => {
+        const target = targetRef.current;
+        const remaining = target.length - prev.length;
+        if (remaining <= 0) return prev;
+        const chars = Math.max(1, Math.ceil(remaining / 12));
+        return target.slice(0, prev.length + chars);
+      });
+      rafRef.current = requestAnimationFrame(tick);
+    }
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [isStreaming]);
+
+  return displayed;
+}
+
+function AssistantBubble({ text, isStreaming }: { text: string; isStreaming: boolean }) {
+  const smoothText = useSmoothText(text, isStreaming);
+  return (
+    <div className="flex justify-start">
+      <div className="max-w-[85%] rounded-2xl bg-gray-100 px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap text-gray-900">
+        {smoothText}
+      </div>
+    </div>
+  );
+}
+
 const CHIPS = [
   { label: "Sortie scolaire", text: "J'aurais besoin d'un bus pour une sortie scolaire", emoji: "🎒" },
   { label: "Séminaire entreprise", text: "J'aurais besoin d'un bus pour un séminaire d'entreprise", emoji: "💼" },
@@ -66,29 +111,34 @@ export default function ChatDevis() {
           ref={scrollRef}
           className="flex max-h-[320px] flex-col gap-3 overflow-y-auto px-5 py-4"
         >
-          {messages.map((msg) => {
+          {messages.map((msg, i) => {
             const text = getTextContent(msg);
             if (msg.role === "assistant" && !text) return null;
+
+            if (msg.role === "assistant") {
+              const isLast = i === messages.length - 1;
+              return (
+                <AssistantBubble
+                  key={msg.id}
+                  text={text}
+                  isStreaming={isLast && status === "streaming"}
+                />
+              );
+            }
 
             return (
               <div
                 key={msg.id}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                className="flex justify-end"
               >
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
-                    msg.role === "user"
-                      ? "bg-navy-950 text-white"
-                      : "bg-gray-100 text-gray-900"
-                  }`}
-                >
+                <div className="max-w-[85%] rounded-2xl bg-navy-950 px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap text-white">
                   {text}
                 </div>
               </div>
             );
           })}
 
-          {isLoading && (
+          {status === "submitted" && (
             <div className="flex justify-start">
               <div className="rounded-2xl bg-gray-100 px-4 py-3">
                 <div className="flex gap-1">
