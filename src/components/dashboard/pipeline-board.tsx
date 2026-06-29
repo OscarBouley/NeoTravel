@@ -84,7 +84,7 @@ const COLUMN_CONFIG: { key: KanbanColumnKey; label: string; dot: string }[] = [
   { key: "DEVIS_ENVOYÉ", label: "Devis envoyé", dot: "bg-blue-500" },
   { key: "RELANCE",      label: "Relance",       dot: "bg-yellow-400" },
   { key: "GAGNÉ",        label: "Gagné",         dot: "bg-green-500" },
-  { key: "PERDU",        label: "Perdu",         dot: "bg-red-400" },
+  { key: "PERDU",        label: "Infos supplémentaires", dot: "bg-red-400" },
   { key: "HITL",         label: "À traiter",     dot: "bg-orange-400" },
 ];
 

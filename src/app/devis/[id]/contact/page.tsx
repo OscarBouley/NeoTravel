@@ -1,14 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 
-type Status = "form" | "submitting" | "success" | "error";
+type Status = "loading" | "form" | "submitting" | "success" | "error";
 
 export default function ContactPage() {
   const { id } = useParams<{ id: string }>();
   const [telephone, setTelephone] = useState("");
-  const [status, setStatus] = useState<Status>("form");
+  const [status, setStatus] = useState<Status>("loading");
+
+  useEffect(() => {
+    fetch(`/api/devis/${id}/contact`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.hasTelephone) {
+          fetch(`/api/devis/${id}/contact`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          })
+            .then((res) => {
+              setStatus(res.ok ? "success" : "error");
+            })
+            .catch(() => setStatus("error"));
+        } else {
+          setStatus("form");
+        }
+      })
+      .catch(() => setStatus("form"));
+  }, [id]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +60,12 @@ export default function ContactPage() {
           Neo<span className="text-lime-400">Travel</span>
         </span>
 
-        {status === "success" ? (
+        {status === "loading" ? (
+          <div className="mt-8">
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-navy-400 border-t-lime-400" />
+            <p className="mt-4 text-sm text-navy-400">Chargement...</p>
+          </div>
+        ) : status === "success" ? (
           <div className="mt-8">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-lime-400/15">
               <svg className="h-8 w-8 text-lime-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

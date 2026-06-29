@@ -12,6 +12,7 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "node --env-file=.env.local --import tsx scripts/seed.ts",
     "db:clear": "node --env-file=.env.local --import tsx scripts/clear.ts",
+    "relances": "node --env-file=.env.local -e \"fetch('http://localhost:3000/api/cron/relances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret:process.env.CRON_SECRET})}).then(r=>r.json()).then(console.log).catch(console.error)\"",
     "test": "vitest run",
     "test:watch": "vitest"
   },
