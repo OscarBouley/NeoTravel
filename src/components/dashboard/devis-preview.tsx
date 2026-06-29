@@ -147,7 +147,6 @@ export default function DevisPreview({
     departDate: leadInfo?.departDate ?? "",
     departHeure: leadInfo?.departHeure ?? "",
     arriveeDate: leadInfo?.arriveeDate ?? "",
-    arriveeHeure: leadInfo?.arriveeHeure ?? "",
     besoin: leadInfo?.besoin ?? "aller_simple",
     voyageursMin: leadInfo?.voyageursMin ?? 0,
     voyageursMax: leadInfo?.voyageursMax ?? 0,
@@ -247,7 +246,6 @@ export default function DevisPreview({
           departDate: editLead.departDate || null,
           departHeure: editLead.departHeure || null,
           arriveeDate: editLead.arriveeDate || null,
-          arriveeHeure: editLead.arriveeHeure || null,
           besoin: editLead.besoin,
           voyageursMin: editLead.voyageursMin || null,
           voyageursMax: editLead.voyageursMax || null,
@@ -381,14 +379,10 @@ export default function DevisPreview({
                       <input type="time" value={editLead.departHeure} onChange={(e) => setEditLead({ ...editLead, departHeure: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
                     </div>
                   </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div className="mt-2">
                     <div>
                       <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Date retour</label>
                       <input type="date" value={editLead.arriveeDate} onChange={(e) => setEditLead({ ...editLead, arriveeDate: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
-                    </div>
-                    <div>
-                      <label className={`mb-0.5 block text-[10px] ${txtLabel}`}>Heure retour</label>
-                      <input type="time" value={editLead.arriveeHeure} onChange={(e) => setEditLead({ ...editLead, arriveeHeure: e.target.value })} className={`w-full rounded border px-2 py-1 text-xs focus:outline-none ${bgInput}`} />
                     </div>
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-2">

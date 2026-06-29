@@ -233,11 +233,11 @@ export function DevisPdf({ data }: { data: DevisPdfData }) {
             </Text>
           </View>
           <View style={s.row}>
-            <Text style={s.label}>Arrivée</Text>
+            <Text style={s.label}>Arrivée estimée</Text>
             <Text style={s.value}>
               {data.voyage.arriveeVille} —{" "}
-              {formatDate(data.voyage.arriveeDate)} à{" "}
-              {data.voyage.arriveeHeure}
+              {formatDate(data.voyage.arriveeDate)}
+              {data.voyage.arriveeHeure ? ` à ~${data.voyage.arriveeHeure}` : ""}
             </Text>
           </View>
         </View>

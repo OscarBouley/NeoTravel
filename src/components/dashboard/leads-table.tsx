@@ -199,7 +199,7 @@ export default function LeadsTable({ rows }: { rows: GroupedRow[] }) {
                     </div>
                     <div>
                       Arr: {formatDate(row.lead.arriveeDate)}{" "}
-                      {formatHeure(row.lead.arriveeHeure)}
+                      {row.lead.arriveeHeure ? `~${formatHeure(row.lead.arriveeHeure)}` : ""}
                     </div>
                   </td>
                   <td className="px-3 py-3 text-center text-sm">

@@ -5,6 +5,15 @@ import { eq, desc } from "drizzle-orm";
 import { calculerDistanceKm } from "@/lib/geo/distance";
 import { calculerDevis } from "@/lib/business/calculer-devis";
 
+function calculerHeureArrivee(heureDepart: string, distanceKm: number): string {
+  const [h, m] = heureDepart.split(":").map(Number);
+  const minutesTrajet = Math.round((distanceKm / 80) * 60);
+  const totalMinutes = h * 60 + m + minutesTrajet;
+  const hArrivee = Math.floor(totalMinutes / 60) % 24;
+  const mArrivee = totalMinutes % 60;
+  return `${String(hArrivee).padStart(2, "0")}:${String(mArrivee).padStart(2, "0")}`;
+}
+
 export async function GET() {
   try {
     const rows = await db
@@ -42,7 +51,6 @@ export async function POST(request: NextRequest) {
       departHeure,
       arriveeVille,
       arriveeDate,
-      arriveeHeure,
       besoin,
       voyageursMin,
       voyageursMax,
@@ -94,7 +102,6 @@ export async function POST(request: NextRequest) {
           departHeure: departHeure || null,
           arriveeVille,
           arriveeDate: arriveeDate || null,
-          arriveeHeure: arriveeHeure || null,
           besoin,
           voyageursMin: voyageursMin ? Number(voyageursMin) : null,
           voyageursMax: voyageursMax ? Number(voyageursMax) : null,
@@ -119,6 +126,14 @@ export async function POST(request: NextRequest) {
         { success: true, id: lead.id, status: "Erreur distance" },
         { status: 201 },
       );
+    }
+
+    if (departHeure) {
+      const arriveeHeure = calculerHeureArrivee(departHeure, distanceKm);
+      await db
+        .update(leads)
+        .set({ arriveeHeure })
+        .where(eq(leads.id, lead.id));
     }
 
     const nbPassagers = (voyageursMax ? Number(voyageursMax) : voyageursMin ? Number(voyageursMin) : 1);

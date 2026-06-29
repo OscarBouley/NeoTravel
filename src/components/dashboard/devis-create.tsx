@@ -280,8 +280,8 @@ export default function DevisCreate({ leadId, lead, prospect, onClose }: DevisCr
                     value={lead.departDate ? `${formatDate(lead.departDate)}${lead.departHeure ? ` à ${lead.departHeure}` : ""}` : "—"}
                   />
                   <InfoLine
-                    label="Date retour"
-                    value={lead.arriveeDate ? `${formatDate(lead.arriveeDate)}${lead.arriveeHeure ? ` à ${lead.arriveeHeure}` : ""}` : "—"}
+                    label="Retour estimé"
+                    value={lead.arriveeDate ? `${formatDate(lead.arriveeDate)}${lead.arriveeHeure ? ` à ~${lead.arriveeHeure}` : ""}` : "—"}
                   />
                   <InfoLine label="Passagers" value={pax ? `${pax} pax` : "—"} />
                 </div>

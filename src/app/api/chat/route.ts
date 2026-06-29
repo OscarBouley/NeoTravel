@@ -27,7 +27,8 @@ D'abord les infos du trajet (étape 1), puis les infos personnelles (étape 2).
 - Heure de départ
 - Ville d'arrivée
 - Date d'arrivée (jour précis)
-- Heure d'arrivée
+
+NOTE : Ne demande JAMAIS l'heure d'arrivée au prospect. L'heure d'arrivée estimée sera calculée automatiquement à partir de la distance et d'une vitesse moyenne de 80 km/h.
 
 ÉTAPE 2 — COORDONNÉES (une fois le trajet complet) :
 - Nom
@@ -85,7 +86,6 @@ const devisSchema = z.object({
   depart_heure: z.string().describe("Heure de départ au format HH:MM"),
   arrivee_ville: z.string().describe("Ville d'arrivée"),
   arrivee_date: z.string().describe("Date d'arrivée au format YYYY-MM-DD"),
-  arrivee_heure: z.string().describe("Heure d'arrivée au format HH:MM"),
   voyageurs_min: z
     .number()
     .int()
@@ -103,6 +103,15 @@ const devisSchema = z.object({
 });
 
 type DevisInput = z.infer<typeof devisSchema>;
+
+function calculerHeureArrivee(heureDepart: string, distanceKm: number): string {
+  const [h, m] = heureDepart.split(":").map(Number);
+  const minutesTrajet = Math.round((distanceKm / 80) * 60);
+  const totalMinutes = h * 60 + m + minutesTrajet;
+  const hArrivee = Math.floor(totalMinutes / 60) % 24;
+  const mArrivee = totalMinutes % 60;
+  return `${String(hArrivee).padStart(2, "0")}:${String(mArrivee).padStart(2, "0")}`;
+}
 
 async function executeCreerDevis(params: DevisInput) {
   logger.ia("DÉBUT CRÉATION DEVIS", `prospect: ${params.prenom} ${params.nom} (${params.email})`);
@@ -137,7 +146,7 @@ async function executeCreerDevis(params: DevisInput) {
       .returning();
   }
 
-  // 2. Créer le lead
+  // 2. Créer le lead (arriveeHeure sera mis à jour après calcul de distance)
   const [lead] = await db
     .insert(leads)
     .values({
@@ -147,7 +156,6 @@ async function executeCreerDevis(params: DevisInput) {
       departHeure: params.depart_heure,
       arriveeVille: params.arrivee_ville,
       arriveeDate: params.arrivee_date,
-      arriveeHeure: params.arrivee_heure,
       besoin: params.besoin,
       voyageursMin: params.voyageurs_min,
       voyageursMax: params.voyageurs_max,
@@ -174,6 +182,13 @@ async function executeCreerDevis(params: DevisInput) {
       message: `Demande enregistrée (réf: ${lead.id.slice(0, 8)}). Le calcul automatique de distance a échoué, un conseiller traitera votre demande manuellement sous 2h.`,
     };
   }
+
+  // 3b. Calculer et stocker l'heure d'arrivée estimée
+  const arriveeHeure = calculerHeureArrivee(params.depart_heure, distanceKm);
+  await db
+    .update(leads)
+    .set({ arriveeHeure })
+    .where(eq(leads.id, lead.id));
 
   // 4. Calculer le prix
   const nbPassagers = params.voyageurs_max;
@@ -248,7 +263,7 @@ export async function POST(req: Request) {
     tools: {
       creer_devis: tool({
         description:
-          "Crée une demande de devis, calcule le prix, génère le PDF et envoie le devis par email. N'appeler que quand TOUS les champs sont renseignés et confirmés par le prospect : besoin, depart_ville, depart_date, depart_heure, arrivee_ville, arrivee_date, arrivee_heure, voyageurs_min, voyageurs_max, nom, prenom, email, telephone, societe.",
+          "Crée une demande de devis, calcule le prix, génère le PDF et envoie le devis par email. N'appeler que quand TOUS les champs sont renseignés et confirmés par le prospect : besoin, depart_ville, depart_date, depart_heure, arrivee_ville, arrivee_date, voyageurs_min, voyageurs_max, nom, prenom, email, telephone, societe. L'heure d'arrivée est calculée automatiquement.",
         inputSchema: devisSchema,
         execute: executeCreerDevis,
       }),
