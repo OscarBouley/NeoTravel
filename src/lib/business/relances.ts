@@ -71,6 +71,7 @@ export async function getRelancesAEnvoyer(): Promise<RelanceAEnvoyer[]> {
     if (row.lead.status !== "Devis envoyé") continue;
     if (!row.lead.departDate) continue;
     if (!row.devis.envoyeLe) continue;
+    if (!row.prospect.email) continue;
 
     const joursAvantDepart = joursAvant(row.lead.departDate);
     if (joursAvantDepart < 0) continue;
@@ -88,7 +89,7 @@ export async function getRelancesAEnvoyer(): Promise<RelanceAEnvoyer[]> {
         result.push({
           devisId: row.devis.id,
           leadId: row.lead.id,
-          prospectEmail: row.prospect.email,
+          prospectEmail: row.prospect.email!,
           prospectPrenom: row.prospect.prenom ?? row.prospect.nom ?? "",
           reference: row.devis.reference,
           prixTTC: row.devis.prixTTC,

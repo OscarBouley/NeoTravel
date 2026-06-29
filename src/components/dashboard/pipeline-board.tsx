@@ -16,7 +16,7 @@ export interface Prospect {
   id: string;
   nom: string | null;
   prenom: string | null;
-  email: string;
+  email: string | null;
   telephone: string | null;
   societe: string | null;
 }
@@ -124,13 +124,17 @@ function ContactTooltip({ prospect }: { prospect: Prospect }) {
           className="absolute left-0 top-full z-30 mt-1 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg whitespace-nowrap"
           onClick={(e) => e.stopPropagation()}
         >
-          <p
-            className="cursor-pointer text-xs text-gray-600 hover:text-blue-500"
-            onClick={() => navigator.clipboard.writeText(prospect.email)}
-            title="Cliquer pour copier"
-          >
-            {prospect.email}
-          </p>
+          {prospect.email ? (
+            <p
+              className="cursor-pointer text-xs text-gray-600 hover:text-blue-500"
+              onClick={() => navigator.clipboard.writeText(prospect.email!)}
+              title="Cliquer pour copier"
+            >
+              {prospect.email}
+            </p>
+          ) : (
+            <p className="text-xs text-gray-400 italic">Pas d&apos;email</p>
+          )}
           {prospect.telephone && (
             <p
               className="cursor-pointer text-xs text-gray-600 hover:text-blue-500"

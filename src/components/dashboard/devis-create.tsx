@@ -261,7 +261,7 @@ export default function DevisCreate({ leadId, lead, prospect, onClose }: DevisCr
                 <p className="mb-2 text-xs font-semibold text-gray-500">Client</p>
                 <div className="space-y-1.5">
                   <InfoLine label="Nom" value={`${prospect.prenom ?? ""} ${prospect.nom ?? ""}`.trim() || "—"} />
-                  <InfoLine label="Email" value={prospect.email} />
+                  <InfoLine label="Email" value={prospect.email ?? "—"} />
                   {prospect.telephone && <InfoLine label="Tél" value={prospect.telephone} />}
                   {prospect.societe && <InfoLine label="Société" value={prospect.societe} />}
                 </div>

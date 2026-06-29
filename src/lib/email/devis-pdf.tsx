@@ -199,10 +199,12 @@ export function DevisPdf({ data }: { data: DevisPdfData }) {
             <Text style={s.label}>Société</Text>
             <Text style={s.value}>{data.prospect.societe}</Text>
           </View>
-          <View style={s.row}>
-            <Text style={s.label}>Email</Text>
-            <Text style={s.value}>{data.prospect.email}</Text>
-          </View>
+          {data.prospect.email && (
+            <View style={s.row}>
+              <Text style={s.label}>Email</Text>
+              <Text style={s.value}>{data.prospect.email}</Text>
+            </View>
+          )}
           <View style={s.row}>
             <Text style={s.label}>Téléphone</Text>
             <Text style={s.value}>{data.prospect.telephone}</Text>

@@ -23,14 +23,13 @@ export const prospects = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     nom: varchar("nom", { length: 255 }),
     prenom: varchar("prenom", { length: 255 }),
-    email: varchar("email", { length: 255 }).notNull(),
+    email: varchar("email", { length: 255 }),
     telephone: varchar("telephone", { length: 20 }),
     societe: varchar("societe", { length: 255 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (table) => [uniqueIndex("prospects_email_idx").on(table.email)],
 );
 
 export const leads = pgTable("leads", {

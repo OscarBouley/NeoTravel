@@ -34,7 +34,7 @@ interface LeadInfo {
 interface ProspectInfo {
   nom: string | null;
   prenom: string | null;
-  email: string;
+  email: string | null;
   telephone: string | null;
   societe: string | null;
 }

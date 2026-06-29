@@ -92,37 +92,44 @@ export async function POST(
       })
       .returning({ id: devis.id, reference: devis.reference });
 
-    await envoyerDevis({
-      devisId: devisRecord.id,
-      reference,
-      date: new Date().toISOString().slice(0, 10),
-      prospect: {
-        nom: prospect.nom ?? "",
-        prenom: prospect.prenom ?? "",
-        email: prospect.email,
-        telephone: prospect.telephone ?? "",
-        societe: prospect.societe ?? "",
-      },
-      voyage: {
-        besoin: lead.besoin,
-        departVille: lead.departVille ?? "",
-        departDate: lead.departDate,
-        departHeure: lead.departHeure ?? "",
-        arriveeVille: lead.arriveeVille ?? "",
-        arriveeDate: lead.arriveeDate ?? "",
-        arriveeHeure: lead.arriveeHeure ?? "",
-        nbPassagers: lead.voyageursMax ?? lead.voyageursMin ?? 1,
-      },
-      prix: {
-        prixHT: result.prixHT,
-        prixTTC: result.prixTTC,
-      },
-    });
+    if (prospect.email) {
+      await envoyerDevis({
+        devisId: devisRecord.id,
+        reference,
+        date: new Date().toISOString().slice(0, 10),
+        prospect: {
+          nom: prospect.nom ?? "",
+          prenom: prospect.prenom ?? "",
+          email: prospect.email!,
+          telephone: prospect.telephone ?? "",
+          societe: prospect.societe ?? "",
+        },
+        voyage: {
+          besoin: lead.besoin,
+          departVille: lead.departVille ?? "",
+          departDate: lead.departDate,
+          departHeure: lead.departHeure ?? "",
+          arriveeVille: lead.arriveeVille ?? "",
+          arriveeDate: lead.arriveeDate ?? "",
+          arriveeHeure: lead.arriveeHeure ?? "",
+          nbPassagers: lead.voyageursMax ?? lead.voyageursMin ?? 1,
+        },
+        prix: {
+          prixHT: result.prixHT,
+          prixTTC: result.prixTTC,
+        },
+      });
 
-    await db
-      .update(leads)
-      .set({ status: "Devis envoyé" })
-      .where(eq(leads.id, id));
+      await db
+        .update(leads)
+        .set({ status: "Devis envoyé" })
+        .where(eq(leads.id, id));
+    } else {
+      await db
+        .update(leads)
+        .set({ status: "Devis généré" })
+        .where(eq(leads.id, id));
+    }
 
     return NextResponse.json({
       success: true,

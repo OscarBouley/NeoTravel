@@ -31,15 +31,20 @@ D'abord les infos du trajet (étape 1), puis les infos personnelles (étape 2).
 NOTE : Ne demande JAMAIS l'heure d'arrivée au prospect. L'heure d'arrivée estimée sera calculée automatiquement à partir de la distance et d'une vitesse moyenne de 80 km/h.
 
 ÉTAPE 2 — COORDONNÉES (une fois le trajet complet) :
-- Nom
-- Prénom
-- Email
-- Téléphone
-- Société / organisation
+- Nom (obligatoire)
+- Prénom (obligatoire)
+- Société / organisation (obligatoire)
 
-AVANT D'APPELER L'OUTIL :
-- Vérifie que TOUS les champs ci-dessus sont renseignés, sans exception
-- Si un champ manque, demande-le explicitement
+IMPORTANT — EMAIL ET TÉLÉPHONE :
+- Ne demande PAS l'email ni le téléphone pendant la collecte
+- Crée le devis dès que nom, prénom, société et les infos trajet sont confirmés
+- APRÈS avoir créé le devis et communiqué le tarif, propose :
+  "Si vous souhaitez recevoir ce devis par email, vous pouvez me laisser votre adresse mail. Et si vous souhaitez être recontacté par un conseiller, n'hésitez pas à me communiquer votre numéro de téléphone."
+- Si le prospect fournit ensuite un email ou téléphone, utilise l'outil mettre_a_jour_contact pour les enregistrer
+
+AVANT D'APPELER L'OUTIL creer_devis :
+- Vérifie que les infos trajet + nom, prénom et société sont renseignés
+- Si un champ obligatoire manque, demande-le explicitement
 - Fais un récapitulatif complet et demande confirmation
 - N'appelle l'outil qu'après confirmation du prospect
 
@@ -54,7 +59,7 @@ RÈGLES MÉTIER :
 - Pendant la collecte, tu ne donnes JAMAIS de prix, estimation, tarif ou fourchette de prix
 - Si on te demande un prix avant la création du devis, réponds que le prix sera calculé automatiquement une fois toutes les infos réunies
 - Tu ne négocies rien, tu collectes les informations
-- Après la création du devis, communique au prospect le tarif TTC renvoyé par l'outil et précise qu'un conseiller va relire le devis et le lui enverra par email très prochainement
+- Après la création du devis, communique au prospect le tarif TTC renvoyé par l'outil, puis propose de laisser un email pour recevoir le devis ou un téléphone pour être recontacté
 - Utilise le champ "message" renvoyé par l'outil pour construire ta confirmation
 
 CAS COMPLEXES — CRÉATION PARTIELLE :
@@ -75,8 +80,6 @@ Puis appelle l'outil avec le champ complexe à true pour signaler le cas.`;
 const devisSchema = z.object({
   nom: z.string().describe("Nom de famille du prospect"),
   prenom: z.string().describe("Prénom du prospect"),
-  email: z.string().email().describe("Email du prospect"),
-  telephone: z.string().describe("Numéro de téléphone"),
   societe: z.string().describe("Société ou organisation du prospect"),
   besoin: z
     .enum(["aller_simple", "aller_retour", "circuit"])
@@ -114,37 +117,17 @@ function calculerHeureArrivee(heureDepart: string, distanceKm: number): string {
 }
 
 async function executeCreerDevis(params: DevisInput) {
-  logger.ia("DÉBUT CRÉATION DEVIS", `prospect: ${params.prenom} ${params.nom} (${params.email})`);
+  logger.ia("DÉBUT CRÉATION DEVIS", `prospect: ${params.prenom} ${params.nom}`);
 
-  // 1. Upsert prospect
-  let [prospect] = await db
-    .select()
-    .from(prospects)
-    .where(eq(prospects.email, params.email));
-
-  if (prospect) {
-    [prospect] = await db
-      .update(prospects)
-      .set({
-        nom: params.nom,
-        prenom: params.prenom,
-        telephone: params.telephone,
-        societe: params.societe,
-      })
-      .where(eq(prospects.id, prospect.id))
-      .returning();
-  } else {
-    [prospect] = await db
-      .insert(prospects)
-      .values({
-        nom: params.nom,
-        prenom: params.prenom,
-        email: params.email,
-        telephone: params.telephone,
-        societe: params.societe,
-      })
-      .returning();
-  }
+  // 1. Créer le prospect
+  const [prospect] = await db
+    .insert(prospects)
+    .values({
+      nom: params.nom,
+      prenom: params.prenom,
+      societe: params.societe,
+    })
+    .returning();
 
   // 2. Créer le lead (arriveeHeure sera mis à jour après calcul de distance)
   const [lead] = await db
@@ -247,7 +230,44 @@ async function executeCreerDevis(params: DevisInput) {
     leadId: lead.id,
     devisId: devisRecord.id,
     reference,
-    message: `Devis généré avec succès (réf: ${reference}), tarif : ${Math.round(result.prixTTC)} € TTC. Un conseiller va relire votre devis et vous l'enverra par email très prochainement.`,
+    message: `Devis généré avec succès (réf: ${reference}), tarif : ${Math.round(result.prixTTC)} € TTC.`,
+  };
+}
+
+const contactSchema = z.object({
+  lead_id: z.string().describe("L'identifiant du lead retourné par creer_devis (champ leadId)"),
+  email: z.string().email().optional().describe("Email du prospect"),
+  telephone: z.string().optional().describe("Numéro de téléphone du prospect"),
+});
+
+async function executeMettreAJourContact(params: z.infer<typeof contactSchema>) {
+  const [lead] = await db
+    .select()
+    .from(leads)
+    .where(eq(leads.id, params.lead_id));
+
+  if (!lead) {
+    return { success: false, message: "Lead introuvable" };
+  }
+
+  const updates: Record<string, string> = {};
+  if (params.email) updates.email = params.email;
+  if (params.telephone) updates.telephone = params.telephone;
+
+  if (Object.keys(updates).length > 0) {
+    await db
+      .update(prospects)
+      .set(updates)
+      .where(eq(prospects.id, lead.prospectId));
+  }
+
+  const parts: string[] = [];
+  if (params.email) parts.push(`email (${params.email})`);
+  if (params.telephone) parts.push(`téléphone (${params.telephone})`);
+
+  return {
+    success: true,
+    message: `Coordonnées enregistrées : ${parts.join(" et ")}. Un conseiller vous recontactera prochainement.`,
   };
 }
 
@@ -263,9 +283,15 @@ export async function POST(req: Request) {
     tools: {
       creer_devis: tool({
         description:
-          "Crée une demande de devis, calcule le prix, génère le PDF et envoie le devis par email. N'appeler que quand TOUS les champs sont renseignés et confirmés par le prospect : besoin, depart_ville, depart_date, depart_heure, arrivee_ville, arrivee_date, voyageurs_min, voyageurs_max, nom, prenom, email, telephone, societe. L'heure d'arrivée est calculée automatiquement.",
+          "Crée une demande de devis et calcule le prix. N'appeler que quand les champs obligatoires sont renseignés et confirmés par le prospect : besoin, depart_ville, depart_date, depart_heure, arrivee_ville, arrivee_date, voyageurs_min, voyageurs_max, nom, prenom, societe. L'heure d'arrivée est calculée automatiquement. Email et téléphone ne sont PAS requis pour créer le devis.",
         inputSchema: devisSchema,
         execute: executeCreerDevis,
+      }),
+      mettre_a_jour_contact: tool({
+        description:
+          "Enregistre l'email et/ou le téléphone du prospect après la création du devis. Appeler uniquement quand le prospect fournit volontairement son email ou son numéro de téléphone après avoir reçu son tarif.",
+        inputSchema: contactSchema,
+        execute: executeMettreAJourContact,
       }),
     },
     stopWhen: stepCountIs(5),

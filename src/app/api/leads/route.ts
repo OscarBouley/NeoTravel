@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       voyageursMax,
     } = body;
 
-    if (!nom || !email || !besoin || !departVille || !arriveeVille) {
+    if (!nom || !besoin || !departVille || !arriveeVille) {
       return NextResponse.json(
         { error: "Champs obligatoires manquants" },
         { status: 400 },
@@ -64,34 +64,16 @@ export async function POST(request: NextRequest) {
     }
 
     const { prospect, lead } = await db.transaction(async (tx) => {
-      let [p] = await tx
-        .select()
-        .from(prospects)
-        .where(eq(prospects.email, email));
-
-      if (p) {
-        [p] = await tx
-          .update(prospects)
-          .set({
-            nom,
-            prenom: prenom || null,
-            telephone: telephone || null,
-            societe: societe || null,
-          })
-          .where(eq(prospects.id, p.id))
-          .returning();
-      } else {
-        [p] = await tx
-          .insert(prospects)
-          .values({
-            nom,
-            prenom: prenom || null,
-            email,
-            telephone: telephone || null,
-            societe: societe || null,
-          })
-          .returning();
-      }
+      const [p] = await tx
+        .insert(prospects)
+        .values({
+          nom,
+          prenom: prenom || null,
+          email: email || null,
+          telephone: telephone || null,
+          societe: societe || null,
+        })
+        .returning();
 
       const [l] = await tx
         .insert(leads)

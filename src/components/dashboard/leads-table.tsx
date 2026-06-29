@@ -8,7 +8,7 @@ interface Prospect {
   id: string;
   nom: string | null;
   prenom: string | null;
-  email: string;
+  email: string | null;
   telephone: string | null;
   societe: string | null;
 }
@@ -173,7 +173,7 @@ export default function LeadsTable({ rows }: { rows: GroupedRow[] }) {
                       {row.prospect.prenom} {row.prospect.nom}
                     </div>
                     <div className="absolute left-3 top-full z-10 hidden rounded-lg border border-navy-700 bg-navy-900 px-3 py-2 shadow-xl group-hover/prospect:block">
-                      <div className="text-xs text-navy-400">{row.prospect.email}</div>
+                      {row.prospect.email && <div className="text-xs text-navy-400">{row.prospect.email}</div>}
                       {row.prospect.telephone && (
                         <div className="text-xs text-navy-400">{row.prospect.telephone}</div>
                       )}
