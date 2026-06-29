@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 interface DevisData {
@@ -193,6 +193,43 @@ export default function DevisPreview({
     onPriceChange?.(prixHT, prixTTC);
   }, [prixHT, prixTTC, onPriceChange]);
 
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialRender = useRef(true);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+
+  const autoSave = useCallback(() => {
+    if (fieldsLocked) return;
+    const ajustement = customMode === "pct" && customValue ? -(Math.abs(customValue) / 100) : 0;
+    setAutoSaveStatus("saving");
+    fetch(`/api/devis/${currentDevisId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        coeffSaison,
+        coeffDate,
+        coeffCapacite,
+        marge,
+        ajustementCustom: ajustement,
+        prixHT: prixHT.toFixed(2),
+        prixTTC: prixTTC.toFixed(2),
+      }),
+    }).then(() => {
+      setAutoSaveStatus("saved");
+      setTimeout(() => setAutoSaveStatus("idle"), 1500);
+    }).catch(() => setAutoSaveStatus("idle"));
+  }, [currentDevisId, coeffSaison, coeffDate, coeffCapacite, marge, customValue, customMode, prixHT, prixTTC, fieldsLocked]);
+
+  useEffect(() => {
+    if (initialRender.current) {
+      initialRender.current = false;
+      return;
+    }
+    if (fieldsLocked) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(autoSave, 500);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [coeffSaison, coeffDate, coeffCapacite, marge, customValue, customMode, autoSave, fieldsLocked]);
+
   async function handleCreerNouveau() {
     setSaving(true);
     try {
@@ -294,9 +331,16 @@ export default function DevisPreview({
 
   const simulator = (
     <div className="p-5">
-      <h2 className={`text-sm font-semibold ${txtValue}`}>
-        Devis N°{currentVersion} — {devisData.reference}
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className={`text-sm font-semibold ${txtValue}`}>
+          Devis N°{currentVersion} — {devisData.reference}
+        </h2>
+        {autoSaveStatus !== "idle" && (
+          <span className={`text-[10px] ${autoSaveStatus === "saving" ? "text-gray-400" : "text-green-500"}`}>
+            {autoSaveStatus === "saving" ? "Sauvegarde..." : "Sauvegardé"}
+          </span>
+        )}
+      </div>
 
       {/* Status badges */}
       <div className="mb-4 mt-2 flex flex-wrap gap-2">
