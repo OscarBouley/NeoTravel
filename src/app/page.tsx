@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import ChatDevis from "@/components/chat-devis";
 
 export default function Home() {
@@ -110,6 +111,14 @@ export default function Home() {
           />
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="border-t border-navy-800/50 py-6 text-center text-xs text-navy-500">
+        Vos données sont protégées.{" "}
+        <Link href="/rgpd" className="text-navy-400 underline underline-offset-2 transition-colors hover:text-lime-400">
+          Politique de confidentialité
+        </Link>
+      </footer>
     </div>
   );
 }
