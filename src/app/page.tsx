@@ -41,10 +41,6 @@ export default function Home() {
       {/* Hero */}
       <main className="flex flex-col items-center px-4 pt-16 pb-12">
         {/* Badge */}
-        <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-navy-700 bg-navy-900 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-lime-400">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-lime-400" />
-          Devis en moins de 5 minutes
-        </div>
 
         {/* Title */}
         <h1 className="mb-5 text-center text-5xl font-extrabold leading-tight tracking-tight md:text-6xl lg:text-7xl">
@@ -58,7 +54,7 @@ export default function Home() {
         </p>
 
         {/* Chat card */}
-        <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl shadow-navy-950/60">
+        <div className="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl shadow-navy-950/60">
           <ChatDevis />
         </div>
 

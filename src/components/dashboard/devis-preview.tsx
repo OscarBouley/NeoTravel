@@ -197,9 +197,12 @@ export default function DevisPreview({
   const initialRender = useRef(true);
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
+  const pendingSave = useRef<(() => void) | null>(null);
+
   const autoSave = useCallback(() => {
     if (fieldsLocked) return;
     const ajustement = customMode === "pct" && customValue ? -(Math.abs(customValue) / 100) : 0;
+    pendingSave.current = null;
     setAutoSaveStatus("saving");
     fetch(`/api/devis/${currentDevisId}`, {
       method: "PATCH",
@@ -226,9 +229,14 @@ export default function DevisPreview({
     }
     if (fieldsLocked) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    pendingSave.current = autoSave;
     autoSaveTimer.current = setTimeout(autoSave, 500);
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
   }, [coeffSaison, coeffDate, coeffCapacite, marge, customValue, customMode, autoSave, fieldsLocked]);
+
+  useEffect(() => {
+    return () => { pendingSave.current?.(); };
+  }, []);
 
   async function handleCreerNouveau() {
     setSaving(true);
