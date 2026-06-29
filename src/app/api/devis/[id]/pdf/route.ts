@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { DevisPdf } from "@/lib/email/devis-pdf";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -32,6 +32,9 @@ export async function GET(
       .from(prospects)
       .where(eq(prospects.id, lead.prospectId));
 
+    const previewHT = request.nextUrl.searchParams.get("prixHT");
+    const previewTTC = request.nextUrl.searchParams.get("prixTTC");
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pdfBuffer = await renderToBuffer(
       React.createElement(DevisPdf, {
@@ -41,7 +44,7 @@ export async function GET(
           prospect: {
             nom: prospect.nom ?? "",
             prenom: prospect.prenom ?? "",
-            email: prospect.email,
+            email: prospect.email ?? "",
             telephone: prospect.telephone ?? "",
             societe: prospect.societe ?? "",
           },
@@ -56,8 +59,8 @@ export async function GET(
             nbPassagers: lead.voyageursMax ?? lead.voyageursMin ?? 1,
           },
           prix: {
-            prixHT: parseFloat(d.prixHT),
-            prixTTC: parseFloat(d.prixTTC),
+            prixHT: previewHT ? parseFloat(previewHT) : parseFloat(d.prixHT),
+            prixTTC: previewTTC ? parseFloat(previewTTC) : parseFloat(d.prixTTC),
           },
         },
       }) as any,

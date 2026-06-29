@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { leads, prospects, devis } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { calculerDistanceKm } from "@/lib/geo/distance";
+import { calculerDevis } from "@/lib/business/calculer-devis";
+
+function calculerHeureArrivee(heureDepart: string, distanceKm: number): string {
+  const [h, m] = heureDepart.split(":").map(Number);
+  const minutesTrajet = Math.round((distanceKm / 80) * 60);
+  const totalMinutes = h * 60 + m + minutesTrajet;
+  const hArrivee = Math.floor(totalMinutes / 60) % 24;
+  const mArrivee = totalMinutes % 60;
+  return `${String(hArrivee).padStart(2, "0")}:${String(mArrivee).padStart(2, "0")}`;
+}
 
 export async function GET() {
   try {
@@ -40,70 +51,118 @@ export async function POST(request: NextRequest) {
       departHeure,
       arriveeVille,
       arriveeDate,
-      arriveeHeure,
       besoin,
       voyageursMin,
       voyageursMax,
     } = body;
 
-    if (!nom || !email || !besoin || !departVille || !arriveeVille) {
+    if (!nom || !besoin || !departVille || !arriveeVille) {
       return NextResponse.json(
         { error: "Champs obligatoires manquants" },
         { status: 400 },
       );
     }
 
-    const result = await db.transaction(async (tx) => {
-      let [prospect] = await tx
-        .select()
-        .from(prospects)
-        .where(eq(prospects.email, email));
+    const { prospect, lead } = await db.transaction(async (tx) => {
+      const [p] = await tx
+        .insert(prospects)
+        .values({
+          nom,
+          prenom: prenom || null,
+          email: email || null,
+          telephone: telephone || null,
+          societe: societe || null,
+        })
+        .returning();
 
-      if (prospect) {
-        [prospect] = await tx
-          .update(prospects)
-          .set({
-            nom,
-            prenom: prenom || null,
-            telephone: telephone || null,
-            societe: societe || null,
-          })
-          .where(eq(prospects.id, prospect.id))
-          .returning();
-      } else {
-        [prospect] = await tx
-          .insert(prospects)
-          .values({
-            nom,
-            prenom: prenom || null,
-            email,
-            telephone: telephone || null,
-            societe: societe || null,
-          })
-          .returning();
-      }
-
-      const [lead] = await tx
+      const [l] = await tx
         .insert(leads)
         .values({
-          prospectId: prospect.id,
+          prospectId: p.id,
           departVille,
           departDate: departDate || null,
           departHeure: departHeure || null,
           arriveeVille,
           arriveeDate: arriveeDate || null,
-          arriveeHeure: arriveeHeure || null,
           besoin,
           voyageursMin: voyageursMin ? Number(voyageursMin) : null,
           voyageursMax: voyageursMax ? Number(voyageursMax) : null,
         })
-        .returning({ id: leads.id });
+        .returning();
 
-      return lead;
+      return { prospect: p, lead: l };
     });
 
+    console.log(`📝 Lead formulaire créé (${lead.id.slice(0, 8)}), qualification auto...`);
+
+    let distanceKm: number;
+    try {
+      distanceKm = await calculerDistanceKm(departVille, arriveeVille);
+    } catch (err) {
+      console.error("❌ Erreur distance:", err);
+      await db
+        .update(leads)
+        .set({ status: "Erreur distance" })
+        .where(eq(leads.id, lead.id));
+      return NextResponse.json(
+        { success: true, id: lead.id, status: "Erreur distance" },
+        { status: 201 },
+      );
+    }
+
+    if (departHeure) {
+      const arriveeHeure = calculerHeureArrivee(departHeure, distanceKm);
+      await db
+        .update(leads)
+        .set({ arriveeHeure })
+        .where(eq(leads.id, lead.id));
+    }
+
+    const nbPassagers = (voyageursMax ? Number(voyageursMax) : voyageursMin ? Number(voyageursMin) : 1);
+
+    if (nbPassagers > 85) {
+      await db
+        .update(leads)
+        .set({ status: "Renvoyé au commercial" })
+        .where(eq(leads.id, lead.id));
+      return NextResponse.json(
+        { success: true, id: lead.id, status: "Renvoyé au commercial" },
+        { status: 201 },
+      );
+    }
+
+    const result = calculerDevis({
+      distanceKm,
+      besoin,
+      dateDepart: departDate,
+      nbPassagers,
+    });
+
+    const reference = `NT-${Date.now().toString(36).toUpperCase()}`;
+
+    await db.insert(devis).values({
+      leadId: lead.id,
+      reference,
+      distanceKm,
+      prixHT: result.prixHT.toString(),
+      prixTTC: result.prixTTC.toString(),
+      coeffSaison: result.detail.coeffSaison.toString(),
+      coeffDate: result.detail.coeffDate.toString(),
+      coeffCapacite: result.detail.coeffCapacite.toString(),
+      marge: result.detail.marge.toString(),
+      ajustementCustom: result.detail.ajustementCustom.toString(),
+      version: 1,
+    });
+
+    await db
+      .update(leads)
+      .set({ status: "Devis généré" })
+      .where(eq(leads.id, lead.id));
+
+    console.log(`✅ Devis généré automatiquement — ${distanceKm}km, ${result.prixTTC}€ TTC`);
+
     return NextResponse.json(
-      { success: true, id: result.id },
+      { success: true, id: lead.id, status: "Devis généré" },
       { status: 201 },
     );
   } catch (error: unknown) {

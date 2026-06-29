@@ -9,7 +9,12 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file=.env.local ./node_modules/.bin/drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "node --env-file=.env.local --import tsx scripts/seed.ts",
+    "db:clear": "node --env-file=.env.local --import tsx scripts/clear.ts",
+    "relances": "node --env-file=.env.local -e \"fetch('http://localhost:3000/api/cron/relances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret:process.env.CRON_SECRET})}).then(r=>r.json()).then(console.log).catch(console.error)\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@ai-sdk/gateway": "^3.0.134",
@@ -22,10 +27,12 @@
     "postgres": "^3.4.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "recharts": "^3.9.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
     "@types/nodemailer": "^8.0.1",
     "@types/react": "^19",
@@ -34,6 +41,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.22.4",
+    "typescript": "^5",
+    "vitest": "^4.1.9"
   }
 }

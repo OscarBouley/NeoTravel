@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { leads, prospects, devis } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { envoyerDevis } from "@/lib/email/envoyer-devis";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   _request: NextRequest,
@@ -30,6 +31,13 @@ export async function POST(
       .from(prospects)
       .where(eq(prospects.id, lead.prospectId));
 
+    if (!prospect.email) {
+      return NextResponse.json(
+        { error: "Impossible d'envoyer : le prospect n'a pas d'adresse email" },
+        { status: 400 },
+      );
+    }
+
     await envoyerDevis({
       devisId: id,
       isRevision: d.version > 1,
@@ -38,7 +46,7 @@ export async function POST(
       prospect: {
         nom: prospect.nom ?? "",
         prenom: prospect.prenom ?? "",
-        email: prospect.email,
+        email: prospect.email!,
         telephone: prospect.telephone ?? "",
         societe: prospect.societe ?? "",
       },
@@ -68,12 +76,14 @@ export async function POST(
       .set({ status: "Devis envoyé" })
       .where(eq(leads.id, d.leadId));
 
+    logger.commercial("Devis envoyé", `ref: ${d.reference}, email: ${prospect.email!}`);
+
     return NextResponse.json({
       success: true,
-      message: `Devis ${d.reference} envoyé à ${prospect.email}`,
+      message: `Devis ${d.reference} envoyé à ${prospect.email!}`,
     });
   } catch (error: unknown) {
-    console.error("Erreur envoi devis:", error);
+    logger.system("ERREUR envoi devis", `${error}`);
     const message =
       error instanceof Error ? error.message : "Erreur interne";
     return NextResponse.json({ error: message }, { status: 500 });

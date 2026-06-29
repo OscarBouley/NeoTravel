@@ -9,17 +9,23 @@ Prototype d'automatisation du cycle commercial de NeoTravel — PME de transport
 ## Fonctionnalités
 
 ### Pour le prospect (page d'accueil)
-- **Chatbot IA** : assistant conversationnel qui collecte progressivement les infos du trajet puis les coordonnées, qualifie la demande, et génère automatiquement un devis
-- **Formulaire classique** : alternative au chat pour les prospects qui préfèrent un formulaire structuré
+- **Chatbot IA** : assistant conversationnel qui collecte progressivement les infos du trajet puis les coordonnées, qualifie la demande, et génère automatiquement un devis (streaming fluide avec `smoothStream` + typewriter côté client)
+- **Email et téléphone optionnels (RGPD)** : l'IA crée le devis sans email ni téléphone, puis propose au prospect de les laisser volontairement après réception du tarif (outil `mettre_a_jour_contact`)
 - **Email avec devis PDF** : le prospect reçoit son devis en pièce jointe avec boutons Accepter / Décliner
 
 ### Pour le commercial (dashboard)
-- **Tableau de bord** avec 10 KPIs : leads, devis générés/envoyés/acceptés/refusés, taux de conversion, CA, demandes urgentes, relances
-- **Simulateur de devis** : visualisation du détail de calcul, modification des coefficients (saisonnalité, délai, capacité, marge), remise personnalisée en % ou €, preview PDF en temps réel
+- **Pipeline Kanban** responsive avec 7 colonnes : Erreur distance, Qualifié, Devis envoyé, Relance, Gagné, Perdu, À traiter
+- **10 KPIs** : leads aujourd'hui, leads 30j, taux de conversion, CA accepté, qualif. automatique, en attente HITL, répartition (pie chart)
+- **Simulateur de devis** : visualisation du détail de calcul, modification des coefficients (saisonnalité, délai, capacité, marge), remise personnalisée en % ou €
 - **Multi-devis** : possibilité de créer plusieurs versions de devis par demande (v1, v2, v3...)
-- **Relances automatiques** : emails de relance à J+3/J+7 (normal) ou J+1/J+2/J+4 (urgent si prestation ≤7 jours), pas de relance si date dépassée
+- **Création de devis comparative** : vue à deux colonnes (formulaire à gauche, données existantes de la demande à droite) avec auto-complétion des coefficients
+- **Édition client & voyage** : modification des informations client et voyage depuis la preview du devis
+- **Relances automatiques** : 2 emails de relance max — J+3/J+7 (normal) ou J+1/J+2 (urgent si prestation ≤7 jours), pas de relance si date dépassée
+- **Déclenchement manuel des relances** : endpoint POST pour déclencher les relances pendant une démo
 - **Validation humaine** : le commercial review et envoie le devis — pas d'envoi automatique
-- **Escalade HITL** : >85 passagers → renvoi au commercial avec possibilité de créer un devis manuellement
+- **Escalade HITL** : >85 passagers ou cas complexe (circuit multi-étapes, PMR, international...) → renvoi au commercial avec `detailComplexe` décrivant la raison (visible dans le dashboard)
+- **Alerte** : bandeau d'alerte pour les demandes "À traiter" ET "Erreur distance"
+- **Logging** : traçabilité complète (IA + commerciaux) dans `LOGS/` par jour
 
 ### Pipeline de statuts
 `Nouvelle demande` → `Devis généré` → `Devis envoyé` → `Devis accepté` / `Devis refusé`
@@ -69,8 +75,11 @@ Remplir `.env.local` avec les valeurs suivantes :
 | `AI_GATEWAY_API_KEY` | Clé Vercel AI Gateway | [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) |
 | `GMAIL_USER` | Adresse Gmail pour l'envoi des emails | — |
 | `GMAIL_APP_PASSWORD` | Mot de passe d'application Gmail | [Google Account → Security → App Passwords](https://myaccount.google.com/apppasswords) |
+| `ORS_API_KEY` | Clé OpenRouteService (calcul de distance) | [openrouteservice.org](https://openrouteservice.org/) |
 | `CRON_SECRET` | Secret pour protéger l'endpoint cron | Valeur libre |
 | `NEXT_PUBLIC_BASE_URL` | URL publique du site (pour les liens dans les emails) | `http://localhost:3000` en dev |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL publique Supabase (optionnel, usage futur) | Supabase → Project Settings |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Clé publique Supabase (optionnel, usage futur) | Supabase → Project Settings → API |
 
 ### Migrations
 
@@ -102,51 +111,60 @@ src/
 │   ├── layout.tsx                          # Layout global, metadata
 │   ├── globals.css                         # Palette de couleurs (bleu nuit / lime)
 │   ├── dashboard/
-│   │   └── page.tsx                        # Dashboard commercial (KPIs + tableau)
+│   │   ├── page.tsx                        # Dashboard commercial (KPIs + Kanban)
+│   │   └── leads/[id]/page.tsx             # Page détail d'un lead
 │   ├── devis/[id]/
 │   │   ├── accepter/page.tsx               # Page publique d'acceptation du devis
 │   │   └── decliner/page.tsx               # Page publique de déclin du devis
 │   └── api/
 │       ├── health/route.ts                 # Health-check (SELECT 1)
-│       ├── chat/route.ts                   # Chat IA (streamText + tool creer_devis)
+│       ├── chat/route.ts                   # Chat IA (streamText + smoothStream + tools creer_devis & mettre_a_jour_contact)
 │       ├── leads/
 │       │   ├── route.ts                    # GET liste leads | POST créer lead (formulaire)
 │       │   └── [id]/
+│       │       ├── route.ts                # PATCH modifier lead + prospect
 │       │       ├── devis/route.ts          # POST créer devis + envoyer (auto)
 │       │       ├── devis-custom/route.ts   # POST créer devis avec coefficients custom
-│       │       └── note/route.ts           # GET/PUT note commerciale du lead
+│       │       ├── note/route.ts           # GET/PUT note commerciale du lead
+│       │       └── status/route.ts         # PATCH changer le statut
 │       ├── devis/[id]/
 │       │   ├── route.ts                    # DELETE supprimer un devis (si non envoyé)
 │       │   ├── pdf/route.ts                # GET générer et retourner le PDF
 │       │   ├── envoyer/route.ts            # POST envoyer le devis par email
-│       │   └── repondre/route.ts           # POST accepter/décliner (appelé par les boutons email)
+│       │   ├── contact/route.ts            # GET infos contact du prospect lié au devis
+│       │   └── repondre/route.ts           # POST accepter/décliner (boutons email)
 │       └── cron/
-│           └── relances/route.ts           # GET déclencher les relances (protégé par CRON_SECRET)
+│           └── relances/route.ts           # GET (cron Vercel) + POST (déclenchement manuel)
 │
 ├── components/
-│   ├── chat-devis.tsx                      # Composant chat IA (useChat + streaming)
-│   ├── devis-form.tsx                      # Formulaire de devis classique
+│   ├── chat-devis.tsx                      # Composant chat IA (useChat + streaming fluide typewriter)
+│   ├── chat-placeholder.tsx                # Chips de suggestion initiales
 │   ├── reponse-devis.tsx                   # Page de réponse prospect (accepter/décliner)
 │   └── dashboard/
+│       ├── pipeline-board.tsx              # Pipeline Kanban (7 colonnes, KPIs, responsive)
 │       ├── leads-table.tsx                 # Tableau des leads avec actions, note éditable
-│       ├── devis-preview.tsx               # Simulateur de devis (coefficients + preview PDF)
-│       └── devis-create.tsx                # Modale de création manuelle de devis
+│       ├── devis-preview.tsx               # Simulateur de devis (coefficients + édition client/voyage)
+│       ├── devis-create.tsx                # Modale de création (vue comparative + auto-complétion)
+│       └── lead-actions.tsx                # Boutons d'action sur un lead
 │
 └── lib/
     ├── db/
     │   ├── index.ts                        # Client Drizzle + connexion Postgres (Supabase pooler)
     │   └── schema.ts                       # Schéma DB : prospects, leads, devis, relances
     ├── business/
-    │   ├── tarifs.ts                        # Grille tarifaire, coefficients, marge (configurable)
-    │   ├── calculer-devis.ts               # calculer_devis() — 100% déterministe, supporte overrides
-    │   └── relances.ts                     # Logique de calcul des relances dues
+    │   ├── tarifs.ts                       # Grille tarifaire, coefficients, marge (configurable)
+    │   ├── calculer-devis.ts              # calculerDevis() — 100% déterministe, supporte overrides
+    │   └── relances.ts                    # Logique de calcul des relances dues (max 2)
     ├── email/
-    │   ├── transporter.ts                  # Client SMTP Gmail (nodemailer)
-    │   ├── envoyer-devis.ts                # Génère PDF + envoie email devis (avec boutons accepter/décliner)
-    │   ├── envoyer-relance.ts              # Email de relance (ton progressif selon le numéro)
-    │   └── devis-pdf.tsx                   # Template PDF du devis (react-pdf)
-    └── geo/
-        └── distance.ts                     # Calcul distance routière (Nominatim + OSRM, gratuit)
+    │   ├── transporter.ts                 # Client SMTP Gmail (nodemailer)
+    │   ├── envoyer-devis.ts               # Génère PDF + envoie email devis
+    │   ├── envoyer-relance.ts             # Email de relance (2 templates)
+    │   └── devis-pdf.tsx                  # Template PDF du devis (react-pdf)
+    ├── geo/
+    │   └── distance.ts                    # Calcul distance routière (Nominatim + OSRM)
+    └── logger.ts                          # Logger fichier (LOGS/YYYY-MM-DD.log) + console
+
+LOGS/                                      # Logs applicatifs par jour (dossier versionné, contenu ignoré)
 ```
 
 ### Fichiers racine
@@ -157,7 +175,6 @@ src/
 | `next.config.ts` | Config Next.js (`serverExternalPackages` pour postgres, react-pdf, nodemailer) |
 | `vercel.json` | Configuration Vercel Cron (relances à 9h chaque jour) |
 | `.env.example` | Template des variables d'environnement |
-| `CLAUDE.md` | Contexte projet et règles pour l'assistant IA de dev |
 
 ---
 
@@ -171,7 +188,7 @@ prospects  1───∞  leads  1───∞  devis
 ```
 
 - **prospects** : coordonnées client (email unique), upsert à chaque nouvelle demande
-- **leads** : demande de transport (trajet, dates, voyageurs, statut, note commerciale)
+- **leads** : demande de transport (trajet, dates, voyageurs, statut, note commerciale, détail complexe)
 - **devis** : version chiffrée d'un lead (prix, coefficients, distance, référence, date d'envoi)
 - **relances** : trace de chaque email de relance envoyé
 
@@ -196,6 +213,19 @@ Tous les coefficients sont dans [`src/lib/business/tarifs.ts`](src/lib/business/
 
 ---
 
+## Prompt système de l'agent IA
+
+L'agent IA (`src/app/api/chat/route.ts`) est configuré avec Claude Sonnet 4 (temperature 0.3) et deux outils : `creer_devis` et `mettre_a_jour_contact`. Son comportement :
+
+1. **Collecte en 2 étapes strictes** : d'abord le trajet (type, villes, dates, heures, passagers), puis les coordonnées (nom, prénom, société — email et téléphone ne sont PAS demandés, RGPD)
+2. **Récapitulatif + confirmation** avant appel de l'outil
+3. **Jamais de prix** pendant la collecte — le prix est calculé par `calculerDevis()` uniquement
+4. **Cas complexes** : circuits multi-étapes, PMR, international, multi-jours → création partielle, renvoi au commercial avec `detail_complexe` décrivant la raison
+5. **Style** : texte simple (pas de markdown), concis, professionnel, chaleureux, émojis rares
+6. **Après création** : communique le TTC puis propose de laisser un email/téléphone volontairement (enregistré via `mettre_a_jour_contact`)
+
+---
+
 ## Scripts npm
 
 | Commande | Description |
@@ -206,24 +236,67 @@ Tous les coefficients sont dans [`src/lib/business/tarifs.ts`](src/lib/business/
 | `npm run db:generate` | Génère les migrations Drizzle à partir du schéma |
 | `npm run db:migrate` | Applique les migrations sur la base |
 | `npm run db:studio` | Interface web Drizzle Studio |
+| `npm run test` | Lance les tests unitaires (Vitest) |
+| `npm run test:watch` | Tests en mode watch |
+| `npm run db:seed` | Injecte des données de test dans la base |
+
+---
+
+## Tests
+
+Tests unitaires sur `calculerDevis()` avec Vitest (40 tests) couvrant :
+- **Grille tarifaire** : chaque palier de distance, bascule au-delà de 180 km
+- **Multiplicateur** : aller simple (×1), aller-retour (×2), circuit (×1)
+- **Saisonnalité** : chaque mois de l'année (-7% à +15%)
+- **Délai demande** : prioritaire, urgent, normal, 3 mois+
+- **Capacité** : chaque tranche de passagers, limite 85 pax, escalade HITL à 86+
+- **Overrides** : remplacement individuel de chaque coefficient
+- **TVA et arrondi** : vérification prixTTC = prixHT × 1.10, arrondi 2 décimales
+- **Formule complète** : calculs vérifiables à la main
+
+```bash
+npm run test
+```
 
 ---
 
 ## Relances automatiques
 
-En dev, déclencher manuellement :
+En dev, déclencher manuellement (GET) :
 
 ```bash
 curl "http://localhost:3000/api/cron/relances?secret=VOTRE_CRON_SECRET"
+```
+
+Ou en POST (pour la démo) :
+
+```bash
+curl -X POST http://localhost:3000/api/cron/relances \
+  -H "Content-Type: application/json" \
+  -d '{"secret": "VOTRE_CRON_SECRET"}'
 ```
 
 En prod, Vercel Cron exécute automatiquement chaque jour à 9h (configuré dans `vercel.json`).
 
 ### Calendrier de relance
 
-| Type | Relance 1 | Relance 2 | Relance 3 |
-|---|---|---|---|
-| Normal | J+3 | J+7 | — |
-| Urgent (prestation ≤7j) | J+1 | J+2 | J+4 |
+| Type | Relance 1 | Relance 2 |
+|---|---|---|
+| Normal | J+3 | J+7 |
+| Urgent (prestation ≤7j) | J+1 | J+2 |
 
 Pas de relance si : devis accepté/refusé, date de prestation dépassée.
+
+---
+
+## Logging
+
+Les logs applicatifs sont écrits dans `LOGS/YYYY-MM-DD.log` (en dev) et dans la console (Vercel logs en prod).
+
+Chaque ligne suit le format : `[timestamp] [SOURCE] action — détail`
+
+Sources :
+- `IA` : actions de l'agent conversationnel (création lead, calcul prix, renvoi commercial)
+- `COMMERCIAL` : actions du commercial (envoi devis, création custom, changement statut)
+- `CRON` : exécution des relances automatiques
+- `SYSTEM` : réponses prospect, erreurs
