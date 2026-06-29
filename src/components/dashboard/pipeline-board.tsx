@@ -353,6 +353,17 @@ export default function PipelineBoard({
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 px-4 py-4 sm:grid-cols-3 md:px-6 lg:grid-cols-6">
+        {/* Traitement manuel */}
+        <div className={`rounded-xl border p-4 shadow-sm ${stats.enAttenteHitl > 0 ? "border-orange-200 bg-orange-50" : "border-gray-100 bg-white"}`}>
+          <p className="text-xs font-medium text-gray-400">Traitement manuel</p>
+          <div className="mt-1 flex items-end justify-between">
+            <p className={`text-3xl font-bold ${stats.enAttenteHitl > 0 ? "text-orange-500" : "text-gray-900"}`}>
+              {stats.enAttenteHitl}
+            </p>
+            <p className="text-xs text-gray-400">à traiter</p>
+          </div>
+        </div>
+
         {/* Leads */}
         <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
           <p className="text-xs font-medium text-gray-400">Leads aujourd&apos;hui</p>
@@ -394,17 +405,6 @@ export default function PipelineBoard({
           <div className="mt-1 flex items-end justify-between">
             <p className="text-3xl font-bold text-gray-900">{stats.qualifAuto}%</p>
             <p className="text-xs text-gray-400">cible ≥ 70%</p>
-          </div>
-        </div>
-
-        {/* HITL */}
-        <div className={`rounded-xl border p-4 shadow-sm ${stats.enAttenteHitl > 0 ? "border-orange-200 bg-orange-50" : "border-gray-100 bg-white"}`}>
-          <p className="text-xs font-medium text-gray-400">En attente HITL</p>
-          <div className="mt-1 flex items-end justify-between">
-            <p className={`text-3xl font-bold ${stats.enAttenteHitl > 0 ? "text-orange-500" : "text-gray-900"}`}>
-              {stats.enAttenteHitl}
-            </p>
-            <p className="text-xs text-gray-400">à traiter</p>
           </div>
         </div>
 
