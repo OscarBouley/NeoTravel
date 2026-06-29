@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { leads, prospects } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { validerDemande } from "@/lib/business/validation";
 
 export async function PATCH(
   request: NextRequest,
@@ -14,6 +15,18 @@ export async function PATCH(
     const [lead] = await db.select().from(leads).where(eq(leads.id, id));
     if (!lead) {
       return NextResponse.json({ error: "Lead introuvable" }, { status: 404 });
+    }
+
+    const check = validerDemande({
+      departDate: body.departDate ?? lead.departDate,
+      arriveeDate: body.arriveeDate ?? lead.arriveeDate,
+      departVille: body.departVille ?? lead.departVille,
+      arriveeVille: body.arriveeVille ?? lead.arriveeVille,
+      voyageursMin: body.voyageursMin ?? lead.voyageursMin,
+      voyageursMax: body.voyageursMax ?? lead.voyageursMax,
+    });
+    if (!check.valid) {
+      return NextResponse.json({ error: check.errors.join(". ") }, { status: 400 });
     }
 
     const leadUpdates: Record<string, unknown> = {};
