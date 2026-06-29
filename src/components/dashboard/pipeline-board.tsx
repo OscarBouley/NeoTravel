@@ -87,15 +87,6 @@ const COLUMN_CONFIG: { key: KanbanColumnKey; label: string; dot: string }[] = [
   { key: "HITL",         label: "À traiter",     dot: "bg-orange-400" },
 ];
 
-function timeAgo(date: Date): string {
-  const diff = Date.now() - new Date(date).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "à l'instant";
-  if (mins < 60) return `il y a ${mins} min`;
-  const h = Math.floor(mins / 60);
-  if (h < 24) return `il y a ${h}h`;
-  return `il y a ${Math.floor(h / 24)}j`;
-}
 
 function EvoBadge({ value, suffix }: { value: number; suffix?: string }) {
   if (value === 0) return <span className="text-xs text-gray-400">—</span>;
@@ -166,11 +157,11 @@ function PipelineCard({
   const latest = sorted[sorted.length - 1] ?? null;
 
   const isHitl = row.lead.status === "Renvoyé au commercial" || row.lead.status === "Erreur distance";
-  const isUrgent = (() => {
+  const [isUrgent] = useState(() => {
     if (!row.lead.departDate) return false;
     const jours = Math.ceil((new Date(row.lead.departDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     return jours >= 0 && jours <= 7;
-  })();
+  });
 
   function handleClick() {
     if (validDevis.length === 0) {
@@ -183,49 +174,40 @@ function PipelineCard({
   return (
     <div
       onClick={handleClick}
-      className={`relative cursor-pointer rounded-xl border bg-white p-3 shadow-sm transition-all hover:shadow-md ${isHitl ? "border-orange-200 bg-orange-50" : "border-gray-100 hover:border-gray-200"}`}
+      className={`relative cursor-pointer rounded-xl border bg-white p-4 shadow-sm transition-all hover:shadow-md ${isHitl ? "border-orange-200 bg-orange-50" : "border-gray-100 hover:border-gray-200"}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-gray-900">
+          <p className="truncate text-base font-semibold text-gray-900">
             {row.prospect.societe || "—"}
           </p>
           <ContactTooltip prospect={row.prospect} />
         </div>
         {latest && (
-          <span className={`shrink-0 text-sm font-bold ${columnKey === "GAGNÉ" ? "text-green-600" : "text-gray-900"}`}>
+          <span className={`shrink-0 text-base font-bold ${columnKey === "GAGNÉ" ? "text-green-600" : "text-gray-900"}`}>
             {Math.round(parseFloat(latest.prixTTC))} €
           </span>
         )}
       </div>
 
-      <p className="mt-1.5 text-xs text-blue-500">
-        {row.lead.departVille} → {row.lead.arriveeVille}
-        {(row.lead.voyageursMax ?? row.lead.voyageursMin)
-          ? ` · ${row.lead.voyageursMax ?? row.lead.voyageursMin} pax`
-          : ""}
-      </p>
-
       {row.lead.departDate && (
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-2 text-sm text-gray-500">
           Départ: {new Date(row.lead.departDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
-          {row.lead.departHeure ? ` à ${row.lead.departHeure.replace(":", "h")}` : ""}
+          {row.lead.departHeure ? ` à ${row.lead.departHeure.slice(0, 5).replace(":", "h")}` : ""}
         </p>
       )}
 
-      <p className="mt-1 text-xs text-gray-400">{timeAgo(row.lead.createdAt)}</p>
-
-      <div className="mt-2 flex flex-wrap gap-1">
+      <div className="mt-2.5 flex flex-wrap gap-1.5">
         {isUrgent && (
-          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">Urgent -7j</span>
+          <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-600">Urgent -7j</span>
         )}
         {row.nbRelances > 0 && (
-          <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">
+          <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-700">
             Relancé ({row.nbRelances}x)
           </span>
         )}
         {validDevis.length > 1 && (
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+          <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
             {validDevis.length} devis
           </span>
         )}
@@ -458,7 +440,7 @@ export default function PipelineBoard({
             return aJours - bJours;
           });
           return (
-            <div key={col.key} className="flex w-[220px] shrink-0 flex-col sm:w-[260px]">
+            <div key={col.key} className="flex w-[280px] shrink-0 flex-col sm:w-[320px]">
               <div className="mb-3 flex items-center gap-2">
                 <span className={`h-2 w-2 rounded-full ${col.dot}`} />
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
