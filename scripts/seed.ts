@@ -15,89 +15,288 @@ const client = postgres({
 });
 const db = drizzle(client, { schema });
 
+const NOW = new Date("2026-06-29T12:00:00Z");
+
 function daysAgo(n: number): Date {
-  const d = new Date();
+  const d = new Date(NOW);
   d.setDate(d.getDate() - n);
   d.setHours(8 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 60), 0, 0);
   return d;
 }
 
-function futureDate(fromNow: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + fromNow);
+function dateStr(daysFromNow: number): string {
+  const d = new Date(NOW);
+  d.setDate(d.getDate() + daysFromNow);
   return d.toISOString().slice(0, 10);
 }
 
 function randomHeure(): string {
   const h = 6 + Math.floor(Math.random() * 14);
-  return `${h.toString().padStart(2, "0")}:00`;
+  const m = Math.random() < 0.5 ? "00" : "30";
+  return `${h.toString().padStart(2, "0")}:${m}`;
 }
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-const FIXTURES = [
-  { nom: "Martin", prenom: "Sophie", email: "sophie.martin@groupeabc.fr", tel: "0612345678", societe: "Groupe ABC", depart: "Paris", arrivee: "Lyon", besoin: "aller_retour" as const, pax: 45, daysAgo: 0, departIn: 30, status: "Devis généré" },
-  { nom: "Dupont", prenom: "Pierre", email: "p.dupont@techcorp.fr", tel: "0698765432", societe: "TechCorp", depart: "Marseille", arrivee: "Nice", besoin: "aller_simple" as const, pax: 30, daysAgo: 1, departIn: 5, status: "Devis généré" },
-  { nom: "Bernard", prenom: "Marie", email: "m.bernard@educnat.fr", tel: "0654321098", societe: "Lycée Victor Hugo", depart: "Bordeaux", arrivee: "Toulouse", besoin: "aller_retour" as const, pax: 52, daysAgo: 2, departIn: 21, status: "Devis envoyé" },
-  { nom: "Leroy", prenom: "Thomas", email: "thomas@sportclub.fr", tel: "0676543210", societe: "AS Rugby Club", depart: "Lille", arrivee: "Paris", besoin: "aller_retour" as const, pax: 35, daysAgo: 3, departIn: 14, status: "Devis accepté" },
-  { nom: "Moreau", prenom: "Julie", email: "j.moreau@events.fr", tel: "0687654321", societe: "Events Plus", depart: "Nantes", arrivee: "Rennes", besoin: "aller_simple" as const, pax: 60, daysAgo: 4, departIn: 45, status: "Devis envoyé" },
-  { nom: "Garcia", prenom: "Lucas", email: "lucas.g@transport-scolaire.fr", tel: "0643218765", societe: "Collège Pasteur", depart: "Lyon", arrivee: "Grenoble", besoin: "aller_retour" as const, pax: 48, daysAgo: 5, departIn: 60, status: "Devis généré" },
-  { nom: "Petit", prenom: "Emma", email: "emma.petit@mariage.fr", tel: "0612348765", societe: "Mariage E&T", depart: "Strasbourg", arrivee: "Colmar", besoin: "circuit" as const, pax: 80, daysAgo: 7, departIn: 90, status: "Devis envoyé" },
-  { nom: "Roux", prenom: "Alexandre", email: "a.roux@bigcorp.fr", tel: "0698761234", societe: "BigCorp Industries", depart: "Paris", arrivee: "Bruxelles", besoin: "aller_retour" as const, pax: 90, daysAgo: 8, departIn: 35, status: "Renvoyé au commercial" },
-  { nom: "Fournier", prenom: "Camille", email: "camille@asso-jeunes.org", tel: "0665432198", societe: "Asso Jeunes", depart: "Montpellier", arrivee: "Perpignan", besoin: "aller_simple" as const, pax: 25, daysAgo: 10, departIn: 20, status: "Devis accepté" },
-  { nom: "Girard", prenom: "Nicolas", email: "n.girard@seminaire.fr", tel: "0632198765", societe: "Séminaires Pro", depart: "Toulouse", arrivee: "Bordeaux", besoin: "aller_retour" as const, pax: 40, daysAgo: 12, departIn: 8, status: "Devis envoyé" },
-  { nom: "Blanc", prenom: "Isabelle", email: "isabelle@ecole-danse.fr", tel: "0654329876", societe: "École de Danse", depart: "Marseille", arrivee: "Avignon", besoin: "aller_retour" as const, pax: 18, daysAgo: 14, departIn: 3, status: "Devis refusé" },
-  { nom: "Lambert", prenom: "Hugo", email: "hugo.l@startup.io", tel: "0687651234", societe: "StartupIO", depart: "Paris", arrivee: "Lille", besoin: "aller_simple" as const, pax: 15, daysAgo: 15, departIn: 40, status: "Devis généré" },
-  { nom: "Morel", prenom: "Chloé", email: "chloe@club-rando.fr", tel: "0643219876", societe: "Club Rando", depart: "Grenoble", arrivee: "Chamonix", besoin: "circuit" as const, pax: 28, daysAgo: 18, departIn: 55, status: "Devis envoyé" },
-  { nom: "Simon", prenom: "Antoine", email: "a.simon@hotel-group.fr", tel: "0612349876", societe: "Hotel Group", depart: "Nice", arrivee: "Monaco", besoin: "aller_simple" as const, pax: 65, daysAgo: 20, departIn: 25, status: "Devis accepté" },
-  { nom: "Laurent", prenom: "Sarah", email: "sarah@asso-culturelle.fr", tel: "0698764321", societe: "Asso Culturelle", depart: "Lyon", arrivee: "Dijon", besoin: "aller_retour" as const, pax: 38, daysAgo: 22, departIn: 15, status: "Devis envoyé" },
-  { nom: "Michel", prenom: "Julien", email: "julien.m@pharma.fr", tel: "0665439876", societe: "PharmaCo", depart: "Bordeaux", arrivee: "La Rochelle", besoin: "aller_simple" as const, pax: 22, daysAgo: 25, departIn: 10, status: "Devis refusé" },
-  { nom: "Lefebvre", prenom: "Léa", email: "lea@comite-ent.fr", tel: "0632197654", societe: "Comité Entreprise SNCF", depart: "Paris", arrivee: "Strasbourg", besoin: "aller_retour" as const, pax: 55, daysAgo: 28, departIn: 50, status: "Devis accepté" },
-  { nom: "David", prenom: "Maxime", email: "maxime@sport-events.fr", tel: "0654328765", societe: "Sport Events", depart: "Marseille", arrivee: "Montpellier", besoin: "aller_simple" as const, pax: 42, daysAgo: 30, departIn: 12, status: "Devis envoyé" },
-  { nom: "Bertrand", prenom: "Clara", email: "clara.b@voyage-scolaire.fr", tel: "0687659876", societe: "Lycée Molière", depart: "Nantes", arrivee: "Angers", besoin: "aller_retour" as const, pax: 50, daysAgo: 32, departIn: 65, status: "Devis accepté" },
-  { nom: "Richard", prenom: "Olivier", email: "o.richard@conseil.fr", tel: "0643217654", societe: "Conseil Plus", depart: "Toulouse", arrivee: "Pau", besoin: "aller_simple" as const, pax: 20, daysAgo: 35, departIn: 18, status: "Devis généré" },
-  { nom: "Robert", prenom: "Manon", email: "manon@asso-parents.fr", tel: "0612347654", societe: "APE École Centrale", depart: "Lyon", arrivee: "Saint-Étienne", besoin: "aller_retour" as const, pax: 46, daysAgo: 38, departIn: 28, status: "Devis envoyé" },
-  { nom: "Durand", prenom: "Vincent", email: "vincent@immobilier.fr", tel: "0698763214", societe: "Immo Invest", depart: "Paris", arrivee: "Reims", besoin: "aller_retour" as const, pax: 35, daysAgo: 40, departIn: 22, status: "Devis accepté" },
-  { nom: "Thomas", prenom: "Pauline", email: "pauline@chorale.fr", tel: "0665438765", societe: "Chorale Harmonie", depart: "Strasbourg", arrivee: "Nancy", besoin: "aller_retour" as const, pax: 32, daysAgo: 42, departIn: 70, status: "Devis envoyé" },
-  { nom: "Jolie", prenom: "Fabien", email: "fabien@tech-summit.fr", tel: "0632196543", societe: "Tech Summit", depart: "Paris", arrivee: "Bordeaux", besoin: "aller_simple" as const, pax: 75, daysAgo: 45, departIn: 5, status: "Devis refusé" },
-  { nom: "Fontaine", prenom: "Lucie", email: "lucie@asso-senior.fr", tel: "0654327654", societe: "Club Seniors", depart: "Nice", arrivee: "Cannes", besoin: "aller_simple" as const, pax: 30, daysAgo: 48, departIn: 32, status: "Devis accepté" },
-  { nom: "Mercier", prenom: "Romain", email: "romain@startup-weekend.fr", tel: "0687658765", societe: "Startup Weekend", depart: "Lyon", arrivee: "Marseille", besoin: "aller_retour" as const, pax: 40, daysAgo: 50, departIn: 45, status: "Devis envoyé" },
-  { nom: "Chevalier", prenom: "Anaïs", email: "anais@mairie-villeurbanne.fr", tel: "0643216543", societe: "Mairie Villeurbanne", depart: "Villeurbanne", arrivee: "Annecy", besoin: "aller_retour" as const, pax: 55, daysAgo: 52, departIn: 38, status: "Devis accepté" },
-  { nom: "Perrin", prenom: "Sébastien", email: "seb@federation-foot.fr", tel: "0612346543", societe: "FF Foot District", depart: "Paris", arrivee: "Lens", besoin: "aller_retour" as const, pax: 48, daysAgo: 55, departIn: 7, status: "Devis envoyé" },
-  { nom: "Clement", prenom: "Aurélie", email: "aurelie@formation-pro.fr", tel: "0698762143", societe: "Formation Pro", depart: "Montpellier", arrivee: "Nîmes", besoin: "aller_simple" as const, pax: 16, daysAgo: 57, departIn: 42, status: "Erreur distance" },
-  { nom: "Gauthier", prenom: "Damien", email: "damien@agence-voyage.fr", tel: "0665437654", societe: "Agence Voyages+", depart: "Bordeaux", arrivee: "Biarritz", besoin: "aller_retour" as const, pax: 58, daysAgo: 60, departIn: 20, status: "Devis généré" },
+type Besoin = "aller_simple" | "aller_retour" | "circuit";
+
+interface Fixture {
+  nom: string;
+  prenom: string;
+  email: string | null;
+  tel: string | null;
+  societe: string;
+  depart: string;
+  arrivee: string;
+  besoin: Besoin;
+  pax: number;
+  createdDaysAgo: number;
+  departIn: number;
+  status: string;
+  relances?: number;
+  detailComplexe?: string;
+}
+
+const TRAJETS: { depart: string; arrivee: string; km: number }[] = [
+  { depart: "Paris", arrivee: "Lyon", km: 465 },
+  { depart: "Paris", arrivee: "Lille", km: 225 },
+  { depart: "Paris", arrivee: "Bordeaux", km: 585 },
+  { depart: "Paris", arrivee: "Strasbourg", km: 490 },
+  { depart: "Paris", arrivee: "Reims", km: 145 },
+  { depart: "Paris", arrivee: "Rouen", km: 135 },
+  { depart: "Paris", arrivee: "Tours", km: 235 },
+  { depart: "Paris", arrivee: "Lens", km: 200 },
+  { depart: "Lyon", arrivee: "Grenoble", km: 115 },
+  { depart: "Lyon", arrivee: "Saint-Étienne", km: 60 },
+  { depart: "Lyon", arrivee: "Marseille", km: 315 },
+  { depart: "Lyon", arrivee: "Dijon", km: 195 },
+  { depart: "Lyon", arrivee: "Annecy", km: 145 },
+  { depart: "Marseille", arrivee: "Nice", km: 200 },
+  { depart: "Marseille", arrivee: "Avignon", km: 100 },
+  { depart: "Marseille", arrivee: "Montpellier", km: 170 },
+  { depart: "Bordeaux", arrivee: "Toulouse", km: 245 },
+  { depart: "Bordeaux", arrivee: "La Rochelle", km: 190 },
+  { depart: "Bordeaux", arrivee: "Biarritz", km: 196 },
+  { depart: "Toulouse", arrivee: "Pau", km: 195 },
+  { depart: "Toulouse", arrivee: "Montpellier", km: 245 },
+  { depart: "Nantes", arrivee: "Rennes", km: 110 },
+  { depart: "Nantes", arrivee: "Angers", km: 90 },
+  { depart: "Lille", arrivee: "Reims", km: 210 },
+  { depart: "Strasbourg", arrivee: "Colmar", km: 75 },
+  { depart: "Strasbourg", arrivee: "Nancy", km: 160 },
+  { depart: "Nice", arrivee: "Cannes", km: 35 },
+  { depart: "Montpellier", arrivee: "Nîmes", km: 55 },
+  { depart: "Montpellier", arrivee: "Perpignan", km: 170 },
+  { depart: "Grenoble", arrivee: "Chambéry", km: 60 },
 ];
 
-const DISTANCES: Record<string, number> = {
-  "Paris-Lyon": 465, "Marseille-Nice": 200, "Bordeaux-Toulouse": 245,
-  "Lille-Paris": 225, "Nantes-Rennes": 110, "Lyon-Grenoble": 115,
-  "Strasbourg-Colmar": 75, "Paris-Bruxelles": 310, "Montpellier-Perpignan": 170,
-  "Toulouse-Bordeaux": 245, "Marseille-Avignon": 100, "Paris-Lille": 225,
-  "Grenoble-Chamonix": 150, "Nice-Monaco": 20, "Lyon-Dijon": 195,
-  "Bordeaux-La Rochelle": 190, "Paris-Strasbourg": 490, "Marseille-Montpellier": 170,
-  "Nantes-Angers": 90, "Toulouse-Pau": 195, "Lyon-Saint-Étienne": 60,
-  "Paris-Reims": 145, "Strasbourg-Nancy": 160, "Paris-Bordeaux": 585,
-  "Nice-Cannes": 35, "Lyon-Marseille": 315, "Villeurbanne-Annecy": 145,
-  "Paris-Lens": 200, "Montpellier-Nîmes": 55, "Bordeaux-Biarritz": 196,
-};
+const NOMS = [
+  "Martin", "Bernard", "Dupont", "Thomas", "Robert", "Richard", "Petit", "Durand",
+  "Leroy", "Moreau", "Simon", "Laurent", "Lefebvre", "Michel", "Garcia", "David",
+  "Bertrand", "Roux", "Vincent", "Fournier", "Morel", "Girard", "André", "Mercier",
+  "Blanc", "Guérin", "Boyer", "Garnier", "Chevalier", "François", "Legrand", "Gauthier",
+  "Perrin", "Robin", "Clément", "Morin", "Nicolas", "Henry", "Rousseau", "Mathieu",
+  "Aubry", "Fontaine", "Masson", "Pelletier", "Renard", "Picard", "Colin", "Barbier",
+  "Lemoine", "Deschamps",
+];
+const PRENOMS = [
+  "Sophie", "Pierre", "Marie", "Thomas", "Julie", "Lucas", "Emma", "Alexandre",
+  "Camille", "Nicolas", "Isabelle", "Hugo", "Chloé", "Antoine", "Sarah", "Julien",
+  "Léa", "Maxime", "Clara", "Olivier", "Manon", "Vincent", "Pauline", "Fabien",
+  "Lucie", "Romain", "Anaïs", "Sébastien", "Aurélie", "Damien", "Élodie", "Mathieu",
+  "Marion", "Benoît", "Laura", "Guillaume", "Céline", "Florian", "Nathalie", "Kevin",
+  "Morgane", "Yann", "Valérie", "Jérôme", "Sandrine", "Franck", "Delphine", "Arnaud",
+  "Caroline", "Stéphane",
+];
+const SOCIETES = [
+  "Groupe ABC", "TechCorp", "Lycée Victor Hugo", "AS Rugby Club", "Events Plus",
+  "Collège Pasteur", "Mariage E&T", "BigCorp Industries", "Asso Jeunes", "Séminaires Pro",
+  "École de Danse", "StartupIO", "Club Rando", "Hotel Group", "Asso Culturelle",
+  "PharmaCo", "CE SNCF", "Sport Events", "Lycée Molière", "Conseil Plus",
+  "APE École Centrale", "Immo Invest", "Chorale Harmonie", "Tech Summit", "Club Seniors",
+  "Startup Weekend", "Mairie Villeurbanne", "FF Foot District", "Formation Pro", "Agence Voyages+",
+  "CE Airbus", "Asso Randonnée", "Club Basket", "Maison de retraite Beausoleil", "CE BNP",
+  "Théâtre du Soleil", "Orchestre National", "CE Orange", "Scouts de France", "Asso Étudiants",
+  "Mairie de Clichy", "Club Vélo", "Fondation Santé", "CE Thales", "Asso Musique",
+  "CE Renault", "Club Tennis", "Lycée Voltaire", "CE EDF", "Asso Solidarité",
+];
+
+function makeFixtures(): Fixture[] {
+  const fixtures: Fixture[] = [];
+  let idx = 0;
+
+  function add(overrides: Partial<Fixture> & { status: string }) {
+    const trajet = pick(TRAJETS);
+    const nom = NOMS[idx % NOMS.length];
+    const prenom = PRENOMS[idx % PRENOMS.length];
+    const societe = SOCIETES[idx % SOCIETES.length];
+    const hasEmail = overrides.email !== null;
+    const email = overrides.email === undefined
+      ? (hasEmail !== false ? `${prenom.toLowerCase()}.${nom.toLowerCase()}@${societe.toLowerCase().replace(/[^a-z]/g, "")}.fr` : null)
+      : overrides.email;
+    idx++;
+    fixtures.push({
+      nom,
+      prenom,
+      email,
+      tel: overrides.tel ?? (Math.random() < 0.7 ? `06${Math.floor(10000000 + Math.random() * 90000000)}` : null),
+      societe,
+      depart: overrides.depart ?? trajet.depart,
+      arrivee: overrides.arrivee ?? trajet.arrivee,
+      besoin: overrides.besoin ?? pick(["aller_simple", "aller_retour", "aller_retour"] as Besoin[]),
+      pax: overrides.pax ?? (10 + Math.floor(Math.random() * 60)),
+      createdDaysAgo: overrides.createdDaysAgo ?? 1,
+      departIn: overrides.departIn ?? 30,
+      status: overrides.status,
+      relances: overrides.relances,
+      detailComplexe: overrides.detailComplexe,
+    });
+  }
+
+  // === QUALIFIÉ (Devis généré, pas encore envoyé) — 12 leads ===
+  add({ status: "Devis généré", createdDaysAgo: 0, departIn: 25, besoin: "aller_retour", pax: 45, depart: "Paris", arrivee: "Lyon" });
+  add({ status: "Devis généré", createdDaysAgo: 0, departIn: 14, besoin: "aller_simple", pax: 30, depart: "Marseille", arrivee: "Nice" });
+  add({ status: "Devis généré", createdDaysAgo: 1, departIn: 45, besoin: "aller_retour", pax: 52, depart: "Bordeaux", arrivee: "Toulouse" });
+  add({ status: "Devis généré", createdDaysAgo: 1, departIn: 60, besoin: "aller_retour", pax: 38, depart: "Lyon", arrivee: "Grenoble" });
+  add({ status: "Devis généré", createdDaysAgo: 2, departIn: 20, besoin: "aller_simple", pax: 22, depart: "Nantes", arrivee: "Rennes" });
+  add({ status: "Devis généré", createdDaysAgo: 2, departIn: 35, besoin: "circuit", pax: 48, depart: "Strasbourg", arrivee: "Colmar" });
+  add({ status: "Devis généré", createdDaysAgo: 3, departIn: 5, besoin: "aller_retour", pax: 34 }); // urgent
+  add({ status: "Devis généré", createdDaysAgo: 3, departIn: 3, besoin: "aller_simple", pax: 18 }); // urgent
+  add({ status: "Devis généré", createdDaysAgo: 4, departIn: 90, besoin: "aller_retour", pax: 55 });
+  add({ status: "Devis généré", createdDaysAgo: 5, departIn: 40, besoin: "aller_simple", pax: 28 });
+  add({ status: "Devis généré", createdDaysAgo: 7, departIn: 70, besoin: "aller_retour", pax: 42 });
+  add({ status: "Devis généré", createdDaysAgo: 10, departIn: 15, besoin: "aller_retour", pax: 36 });
+
+  // === DEVIS ENVOYÉ (envoyé, pas encore relancé, en attente de réponse) — 15 leads ===
+  add({ status: "Devis envoyé", createdDaysAgo: 1, departIn: 30, besoin: "aller_retour", pax: 40, depart: "Paris", arrivee: "Bordeaux" });
+  add({ status: "Devis envoyé", createdDaysAgo: 1, departIn: 18, besoin: "aller_simple", pax: 25, depart: "Toulouse", arrivee: "Montpellier" });
+  add({ status: "Devis envoyé", createdDaysAgo: 2, departIn: 22, besoin: "aller_retour", pax: 50, depart: "Lyon", arrivee: "Dijon" });
+  add({ status: "Devis envoyé", createdDaysAgo: 2, departIn: 45, besoin: "aller_retour", pax: 35 });
+  add({ status: "Devis envoyé", createdDaysAgo: 2, departIn: 6, besoin: "aller_simple", pax: 20 }); // urgent
+  add({ status: "Devis envoyé", createdDaysAgo: 2, departIn: 4, besoin: "aller_retour", pax: 44 }); // urgent
+  add({ status: "Devis envoyé", createdDaysAgo: 3, departIn: 55, besoin: "circuit", pax: 60 });
+  add({ status: "Devis envoyé", createdDaysAgo: 3, departIn: 28, besoin: "aller_retour", pax: 32 });
+  // prêts à être relancés (envoyés il y a 4+ jours, relance 1 due à J+3)
+  add({ status: "Devis envoyé", createdDaysAgo: 5, departIn: 40, besoin: "aller_retour", pax: 46 });
+  add({ status: "Devis envoyé", createdDaysAgo: 6, departIn: 35, besoin: "aller_simple", pax: 28 });
+  add({ status: "Devis envoyé", createdDaysAgo: 7, departIn: 50, besoin: "aller_retour", pax: 52 });
+  add({ status: "Devis envoyé", createdDaysAgo: 8, departIn: 25, besoin: "aller_retour", pax: 38 });
+  add({ status: "Devis envoyé", createdDaysAgo: 10, departIn: 20, besoin: "aller_simple", pax: 22 });
+  add({ status: "Devis envoyé", createdDaysAgo: 12, departIn: 30, besoin: "aller_retour", pax: 48 });
+  add({ status: "Devis envoyé", createdDaysAgo: 14, departIn: 45, besoin: "aller_retour", pax: 55 });
+
+  // === RELANCÉ (envoyé + relances faites) — 10 leads ===
+  add({ status: "Devis envoyé", createdDaysAgo: 6, departIn: 20, relances: 1, besoin: "aller_retour", pax: 40 });
+  add({ status: "Devis envoyé", createdDaysAgo: 8, departIn: 35, relances: 1, besoin: "aller_simple", pax: 30 });
+  add({ status: "Devis envoyé", createdDaysAgo: 10, departIn: 28, relances: 1, besoin: "aller_retour", pax: 55 });
+  add({ status: "Devis envoyé", createdDaysAgo: 12, departIn: 40, relances: 2, besoin: "aller_retour", pax: 42 });
+  add({ status: "Devis envoyé", createdDaysAgo: 14, departIn: 50, relances: 2, besoin: "circuit", pax: 35 });
+  add({ status: "Devis envoyé", createdDaysAgo: 15, departIn: 22, relances: 2, besoin: "aller_retour", pax: 48 });
+  add({ status: "Devis envoyé", createdDaysAgo: 4, departIn: 5, relances: 1, besoin: "aller_simple", pax: 26 }); // urgent relancé
+  add({ status: "Devis envoyé", createdDaysAgo: 5, departIn: 4, relances: 2, besoin: "aller_retour", pax: 32 }); // urgent 2x relancé
+  add({ status: "Devis envoyé", createdDaysAgo: 18, departIn: 60, relances: 2, besoin: "aller_retour", pax: 50 });
+  add({ status: "Devis envoyé", createdDaysAgo: 20, departIn: 45, relances: 2, besoin: "aller_simple", pax: 20 });
+
+  // === DEVIS ENVOYÉ — suppléments pour atteindre ~100 ===
+  add({ status: "Devis envoyé", createdDaysAgo: 4, departIn: 15, besoin: "aller_retour", pax: 33, depart: "Paris", arrivee: "Rouen" });
+  add({ status: "Devis envoyé", createdDaysAgo: 6, departIn: 38, besoin: "aller_simple", pax: 27, depart: "Lyon", arrivee: "Annecy" });
+  add({ status: "Devis envoyé", createdDaysAgo: 9, departIn: 42, relances: 1, besoin: "aller_retour", pax: 44, depart: "Paris", arrivee: "Tours" });
+  add({ status: "Devis envoyé", createdDaysAgo: 11, departIn: 55, relances: 1, besoin: "aller_retour", pax: 52, depart: "Lille", arrivee: "Reims" });
+  add({ status: "Devis envoyé", createdDaysAgo: 16, departIn: 32, relances: 2, besoin: "aller_simple", pax: 19, depart: "Grenoble", arrivee: "Chambéry" });
+
+  // === QUALIFIÉ — suppléments ===
+  add({ status: "Devis généré", createdDaysAgo: 0, departIn: 10, besoin: "aller_retour", pax: 40, depart: "Toulouse", arrivee: "Pau" });
+  add({ status: "Devis généré", createdDaysAgo: 1, departIn: 55, besoin: "aller_simple", pax: 26, depart: "Nice", arrivee: "Cannes" });
+  add({ status: "Devis généré", createdDaysAgo: 6, departIn: 28, besoin: "aller_retour", pax: 50, depart: "Montpellier", arrivee: "Nîmes" });
+
+  // === INFOS SUPPLÉMENTAIRES — suppléments ===
+  add({ status: "Devis refusé", createdDaysAgo: 6, departIn: 22, besoin: "aller_retour", pax: 34, depart: "Paris", arrivee: "Reims" });
+  add({ status: "Devis refusé", createdDaysAgo: 10, departIn: 15, besoin: "aller_simple", pax: 20, depart: "Bordeaux", arrivee: "La Rochelle" });
+  add({ status: "Devis refusé", createdDaysAgo: 20, departIn: 8, besoin: "aller_retour", pax: 45 });
+  add({ status: "Devis refusé", createdDaysAgo: 28, departIn: -1, besoin: "aller_simple", pax: 30 }); // dépassé
+
+  // === GAGNÉ — suppléments ===
+  add({ status: "Devis accepté", createdDaysAgo: 3, departIn: 8, besoin: "aller_retour", pax: 42, depart: "Strasbourg", arrivee: "Nancy" });
+  add({ status: "Devis accepté", createdDaysAgo: 7, departIn: 20, besoin: "aller_simple", pax: 18, depart: "Montpellier", arrivee: "Perpignan" });
+  add({ status: "Devis accepté", createdDaysAgo: 14, departIn: 35, besoin: "aller_retour", pax: 55, depart: "Nantes", arrivee: "Angers" });
+  add({ status: "Devis accepté", createdDaysAgo: 20, departIn: 45, besoin: "aller_retour", pax: 48, depart: "Paris", arrivee: "Strasbourg" });
+  add({ status: "Devis accepté", createdDaysAgo: 45, departIn: -8, besoin: "aller_retour", pax: 36, depart: "Toulouse", arrivee: "Montpellier" }); // dépassé
+  add({ status: "Devis accepté", createdDaysAgo: 70, departIn: -35, besoin: "aller_simple", pax: 25, depart: "Marseille", arrivee: "Montpellier" }); // dépassé
+
+  // === ERREUR DISTANCE — suppléments ===
+  add({ status: "Erreur distance", createdDaysAgo: 1, departIn: 18, pax: 42, depart: "Issoire", arrivee: "Brioude" });
+
+  // === GAGNÉ (Devis accepté) — boucle ===
+  for (let i = 0; i < 12; i++) {
+    add({ status: "Devis accepté", createdDaysAgo: 5 + i * 4, departIn: 10 + i * 7, besoin: pick(["aller_retour", "aller_simple", "aller_retour"] as Besoin[]), pax: 15 + Math.floor(Math.random() * 55) });
+  }
+  // gagnés avec date dépassée (départ dans le passé)
+  add({ status: "Devis accepté", createdDaysAgo: 30, departIn: -2, besoin: "aller_retour", pax: 45, depart: "Paris", arrivee: "Lyon" });
+  add({ status: "Devis accepté", createdDaysAgo: 40, departIn: -5, besoin: "aller_simple", pax: 32, depart: "Marseille", arrivee: "Avignon" });
+  add({ status: "Devis accepté", createdDaysAgo: 50, departIn: -10, besoin: "aller_retour", pax: 50, depart: "Bordeaux", arrivee: "Toulouse" });
+  add({ status: "Devis accepté", createdDaysAgo: 55, departIn: -15, besoin: "aller_retour", pax: 38, depart: "Nantes", arrivee: "Rennes" });
+  add({ status: "Devis accepté", createdDaysAgo: 60, departIn: -20, besoin: "aller_simple", pax: 28, depart: "Lyon", arrivee: "Grenoble" });
+  add({ status: "Devis accepté", createdDaysAgo: 65, departIn: -30, besoin: "aller_retour", pax: 55, depart: "Lille", arrivee: "Reims" });
+
+  // === INFOS SUPPLÉMENTAIRES (Devis refusé) — 10 leads ===
+  add({ status: "Devis refusé", createdDaysAgo: 4, departIn: 18, besoin: "aller_retour", pax: 40 });
+  add({ status: "Devis refusé", createdDaysAgo: 8, departIn: 25, besoin: "aller_simple", pax: 22 });
+  add({ status: "Devis refusé", createdDaysAgo: 12, departIn: 35, besoin: "aller_retour", pax: 55 });
+  add({ status: "Devis refusé", createdDaysAgo: 15, departIn: 40, besoin: "circuit", pax: 30 });
+  add({ status: "Devis refusé", createdDaysAgo: 18, departIn: 12, besoin: "aller_retour", pax: 48 });
+  add({ status: "Devis refusé", createdDaysAgo: 22, departIn: 30, besoin: "aller_simple", pax: 35 });
+  add({ status: "Devis refusé", createdDaysAgo: 25, departIn: 50, besoin: "aller_retour", pax: 42 });
+  add({ status: "Devis refusé", createdDaysAgo: 30, departIn: 20, besoin: "aller_retour", pax: 38 });
+  add({ status: "Devis refusé", createdDaysAgo: 35, departIn: -3, besoin: "aller_simple", pax: 25 }); // dépassé
+  add({ status: "Devis refusé", createdDaysAgo: 40, departIn: -8, besoin: "aller_retour", pax: 32 }); // dépassé
+
+  // === À TRAITER - HITL (Renvoyé au commercial) — 8 leads ===
+  add({ status: "Renvoyé au commercial", createdDaysAgo: 0, departIn: 30, pax: 95, detailComplexe: "Plus de 85 passagers (95 pax demandés)", depart: "Paris", arrivee: "Bordeaux" });
+  add({ status: "Renvoyé au commercial", createdDaysAgo: 1, departIn: 45, pax: 120, detailComplexe: "Plus de 85 passagers (120 pax demandés)", depart: "Lyon", arrivee: "Marseille" });
+  add({ status: "Renvoyé au commercial", createdDaysAgo: 2, departIn: 60, pax: 50, besoin: "circuit", detailComplexe: "Circuit 5 étapes sur 4 jours avec hébergement", depart: "Paris", arrivee: "Strasbourg" });
+  add({ status: "Renvoyé au commercial", createdDaysAgo: 3, departIn: 25, pax: 35, detailComplexe: "Accessibilité PMR nécessitant un véhicule adapté", depart: "Marseille", arrivee: "Nice" });
+  add({ status: "Renvoyé au commercial", createdDaysAgo: 4, departIn: 15, pax: 40, detailComplexe: "Transport de matériel volumineux (instruments de musique)", depart: "Toulouse", arrivee: "Bordeaux" });
+  add({ status: "Renvoyé au commercial", createdDaysAgo: 5, departIn: 5, pax: 110, detailComplexe: "Plus de 85 passagers (110 pax demandés)", depart: "Nantes", arrivee: "Rennes" }); // urgent
+  add({ status: "Renvoyé au commercial", createdDaysAgo: 7, departIn: 35, pax: 45, besoin: "circuit", detailComplexe: "Trajet international vers Barcelone, passage de frontière", depart: "Montpellier", arrivee: "Perpignan" });
+  add({ status: "Renvoyé au commercial", createdDaysAgo: 10, departIn: 50, pax: 60, detailComplexe: "Prestation sur 3 jours avec hébergement à organiser" });
+
+  // === ERREUR DISTANCE — 7 leads ===
+  add({ status: "Erreur distance", createdDaysAgo: 0, departIn: 20, pax: 30, depart: "Saint-Pierre-des-Corps", arrivee: "Bourg-la-Reine" });
+  add({ status: "Erreur distance", createdDaysAgo: 1, departIn: 14, pax: 25, depart: "Le Puy-en-Velay", arrivee: "Aurillac" });
+  add({ status: "Erreur distance", createdDaysAgo: 2, departIn: 30, pax: 40, depart: "Cergy-Pontoise", arrivee: "Marne-la-Vallée" });
+  add({ status: "Erreur distance", createdDaysAgo: 3, departIn: 45, pax: 18, depart: "Villefranche-sur-Saône", arrivee: "Bourg-en-Bresse" });
+  add({ status: "Erreur distance", createdDaysAgo: 5, departIn: 10, pax: 55, depart: "Saint-Nazaire", arrivee: "La Baule" });
+  add({ status: "Erreur distance", createdDaysAgo: 8, departIn: 25, pax: 35, depart: "Font-Romeu", arrivee: "Ax-les-Thermes" });
+  add({ status: "Erreur distance", createdDaysAgo: 12, departIn: 60, pax: 22, depart: "Châteauroux", arrivee: "Guéret" });
+
+  return fixtures;
+}
+
+const DISTANCES: Record<string, number> = {};
+for (const t of TRAJETS) {
+  DISTANCES[`${t.depart}-${t.arrivee}`] = t.km;
+  DISTANCES[`${t.arrivee}-${t.depart}`] = t.km;
+}
 
 function getDistance(depart: string, arrivee: string): number {
-  return DISTANCES[`${depart}-${arrivee}`] ?? DISTANCES[`${arrivee}-${depart}`] ?? 200;
+  return DISTANCES[`${depart}-${arrivee}`] ?? 200;
 }
 
 async function seed() {
-  console.log("🗑️  Suppression des données existantes...");
+  const fixtures = makeFixtures();
+
+  console.log("Suppression des données existantes...");
   await db.delete(schema.relances);
   await db.delete(schema.devis);
   await db.delete(schema.leads);
   await db.delete(schema.prospects);
 
-  console.log(`🌱 Insertion de ${FIXTURES.length} fixtures...\n`);
+  console.log(`Insertion de ${fixtures.length} fixtures...\n`);
 
-  for (const f of FIXTURES) {
-    const createdAt = daysAgo(f.daysAgo);
+  for (const f of fixtures) {
+    const createdAt = daysAgo(f.createdDaysAgo);
 
     const [prospect] = await db
       .insert(schema.prospects)
@@ -111,7 +310,8 @@ async function seed() {
       })
       .returning();
 
-    const departDate = futureDate(f.departIn);
+    const departDate = dateStr(f.departIn);
+    const arriveeDate = f.besoin === "aller_retour" ? dateStr(f.departIn + 1) : departDate;
 
     const [lead] = await db
       .insert(schema.leads)
@@ -122,16 +322,19 @@ async function seed() {
         departDate,
         departHeure: randomHeure(),
         arriveeVille: f.arrivee,
-        arriveeDate: departDate,
+        arriveeDate,
         arriveeHeure: randomHeure(),
         besoin: f.besoin,
         voyageursMin: f.pax,
         voyageursMax: f.pax,
+        detailComplexe: f.detailComplexe ?? null,
         createdAt,
       })
       .returning();
 
-    if (f.status !== "Nouvelle demande" && f.status !== "Renvoyé au commercial" && f.status !== "Erreur distance") {
+    const needsDevis = !["Renvoyé au commercial", "Erreur distance"].includes(f.status);
+
+    if (needsDevis) {
       const distanceKm = getDistance(f.depart, f.arrivee);
       const result = calculerDevis({
         distanceKm,
@@ -141,32 +344,49 @@ async function seed() {
         nbPassagers: f.pax,
       });
 
-      const envoyeLe =
-        ["Devis envoyé", "Devis accepté", "Devis refusé"].includes(f.status)
-          ? new Date(createdAt.getTime() + 3600000)
-          : null;
+      const wasEnvoye = ["Devis envoyé", "Devis accepté", "Devis refusé"].includes(f.status);
+      const envoyeLe = wasEnvoye
+        ? new Date(createdAt.getTime() + 2 * 3600000)
+        : null;
 
-      await db.insert(schema.devis).values({
-        leadId: lead.id,
-        reference: `NT-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 4).toUpperCase()}`,
-        distanceKm,
-        prixHT: result.prixHT.toString(),
-        prixTTC: result.prixTTC.toString(),
-        coeffSaison: result.detail.coeffSaison.toString(),
-        coeffDate: result.detail.coeffDate.toString(),
-        coeffCapacite: result.detail.coeffCapacite.toString(),
-        marge: result.detail.marge.toString(),
-        ajustementCustom: "0",
-        version: 1,
-        envoyeLe,
-        createdAt,
-      });
+      const [devisRow] = await db
+        .insert(schema.devis)
+        .values({
+          leadId: lead.id,
+          reference: `NT-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 4).toUpperCase()}`,
+          distanceKm,
+          prixHT: result.prixHT.toString(),
+          prixTTC: result.prixTTC.toString(),
+          coeffSaison: result.detail.coeffSaison.toString(),
+          coeffDate: result.detail.coeffDate.toString(),
+          coeffCapacite: result.detail.coeffCapacite.toString(),
+          marge: result.detail.marge.toString(),
+          ajustementCustom: "0",
+          version: 1,
+          envoyeLe,
+          createdAt,
+        })
+        .returning();
+
+      if (f.relances && f.relances > 0 && envoyeLe) {
+        for (let r = 0; r < f.relances; r++) {
+          const relanceDate = new Date(envoyeLe.getTime() + (r === 0 ? 3 : 7) * 24 * 3600000);
+          await db.insert(schema.relances).values({
+            devisId: devisRow.id,
+            type: `relance_${r + 1}`,
+            envoyeLe: relanceDate,
+            createdAt: relanceDate,
+          });
+        }
+      }
     }
 
-    console.log(`  ✅ ${f.societe} — ${f.depart}→${f.arrivee} — ${f.status}`);
+    const col = f.status === "Devis accepté" && f.departIn < 0 ? "GAGNÉ (dépassé)" :
+      f.relances ? `${f.status} (${f.relances}x relancé)` : f.status;
+    console.log(`  ${f.societe.padEnd(30)} ${f.depart}→${f.arrivee.padEnd(16)} ${col}`);
   }
 
-  console.log(`\n🎉 ${FIXTURES.length} fixtures insérées avec succès`);
+  console.log(`\n${fixtures.length} fixtures insérées avec succès`);
   await client.end();
 }
 
